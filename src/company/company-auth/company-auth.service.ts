@@ -111,17 +111,17 @@ export class CompanyAuthService {
       await facilitator.save();
     }
 
-    // Send registration email
-    try {
-      await this.mailService.sendCompanyRegistrationEmail(
+    // Send registration email in background (non-blocking)
+    this.mailService
+      .sendCompanyRegistrationEmail(
         savedCompany.email,
         savedCompany.name,
         generatedPassword,
-      );
-    } catch (error) {
-      console.error('Error sending registration email:', error);
-      // Don't fail registration if email fails
-    }
+      )
+      .catch((error) => {
+        console.error('Error sending registration email:', error);
+        // Don't fail registration if email fails
+      });
 
     return {
       status: 'success',
@@ -230,16 +230,14 @@ export class CompanyAuthService {
     company.password = hashedPassword;
     await company.save();
 
-    // Send email
-    try {
-      await this.mailService.sendForgotPasswordEmail(company.email, newPassword);
-    } catch (error) {
-      console.error('Error sending forgot password email:', error);
-      throw new BadRequestException({
-        status: 'error',
-        message: 'Failed to send email. Please try again later.',
+    // Send email in background (non-blocking)
+    // Password is already updated, so we return success immediately
+    this.mailService
+      .sendForgotPasswordEmail(company.email, newPassword)
+      .catch((error) => {
+        console.error('Error sending forgot password email:', error);
+        // Log error but don't fail the request since password is already updated
       });
-    }
 
     return {
       status: 'success',
@@ -292,13 +290,13 @@ export class CompanyAuthService {
     company.password = hashedPassword;
     await company.save();
 
-    // Send email notification
-    try {
-      await this.mailService.sendPasswordUpdateEmail(company.email, company.name);
-    } catch (error) {
-      console.error('Error sending password update email:', error);
-      // Don't fail if email fails
-    }
+    // Send email notification in background (non-blocking)
+    this.mailService
+      .sendPasswordUpdateEmail(company.email, company.name)
+      .catch((error) => {
+        console.error('Error sending password update email:', error);
+        // Don't fail if email fails
+      });
 
     return {
       status: 'success',

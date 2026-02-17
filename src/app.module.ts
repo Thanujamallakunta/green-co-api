@@ -15,6 +15,9 @@ import { AppController } from './app.controller';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/greenco',
+        serverSelectionTimeoutMS: 10000, // 10 seconds
+        socketTimeoutMS: 45000, // 45 seconds
+        connectTimeoutMS: 10000, // 10 seconds
       }),
       inject: [ConfigService],
     }),

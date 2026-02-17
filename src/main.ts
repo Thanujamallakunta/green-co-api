@@ -3,7 +3,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+  });
 
   // Enable CORS
   app.enableCors({
@@ -22,6 +24,11 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Set timeout for requests (30 seconds)
+  const server = app.getHttpServer();
+  server.timeout = 30000;
+  server.keepAliveTimeout = 30000;
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
