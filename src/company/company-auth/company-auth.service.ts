@@ -1,0 +1,353 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { Company, CompanyDocument } from '../schemas/company.schema';
+import {
+  CompanyProject,
+  CompanyProjectDocument,
+} from '../schemas/company-project.schema';
+import {
+  CompanyFacilitator,
+  CompanyFacilitatorDocument,
+} from '../schemas/company-facilitator.schema';
+import { MailService } from '../../mail/mail.service';
+import { passwordGeneration } from '../../helpers/password.helper';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+
+@Injectable()
+export class CompanyAuthService {
+  constructor(
+    @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
+    @InjectModel(CompanyProject.name)
+    private companyProjectModel: Model<CompanyProjectDocument>,
+    @InjectModel(CompanyFacilitator.name)
+    private companyFacilitatorModel: Model<CompanyFacilitatorDocument>,
+    private jwtService: JwtService,
+    private mailService: MailService,
+  ) {}
+
+  async register(registerDto: RegisterDto) {
+    // Check if email already exists
+    const existingEmail = await this.companyModel.findOne({
+      email: registerDto.email.toLowerCase(),
+    });
+    if (existingEmail) {
+      throw new ConflictException({
+        status: 'errors',
+        errors: {
+          email: ['The Account already exists with this Email Address'],
+        },
+      });
+    }
+
+    // Check if mobile already exists
+    const existingMobile = await this.companyModel.findOne({
+      mobile: registerDto.mobileno,
+    });
+    if (existingMobile) {
+      throw new ConflictException({
+        status: 'errors',
+        errors: {
+          mobileno: ['Mobile number already exists'],
+        },
+      });
+    }
+
+    // Validate mobile number format
+    if (!/^[6-9]\d{9}$/.test(registerDto.mobileno)) {
+      throw new BadRequestException({
+        status: 'errors',
+        errors: {
+          mobileno: ['Please Enter a Valid Mobile Number'],
+        },
+      });
+    }
+
+    // Generate password
+    const generatedPassword = passwordGeneration(12);
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
+
+    // Create company
+    const company = new this.companyModel({
+      email: registerDto.email.toLowerCase(),
+      password: hashedPassword,
+      mobile: registerDto.mobileno,
+      name: registerDto.company_name,
+      account_status: '1',
+      verified_status: '0',
+    });
+
+    const savedCompany = await company.save();
+
+    // Create project
+    const project = new this.companyProjectModel({
+      company_id: savedCompany._id,
+      process_type: registerDto.assessment === 'cii' ? 'c' : 'f',
+      next_activities_id: 1,
+    });
+
+    const savedProject = await project.save();
+
+    // Create facilitator assignment if assessment is facilitator
+    if (registerDto.assessment === 'facilitator' && registerDto.selectfacilitator) {
+      const facilitator = new this.companyFacilitatorModel({
+        company_id: savedCompany._id,
+        project_id: savedProject._id,
+        facilitator_id: registerDto.selectfacilitator,
+      });
+      await facilitator.save();
+    }
+
+    // Send registration email
+    try {
+      await this.mailService.sendCompanyRegistrationEmail(
+        savedCompany.email,
+        savedCompany.name,
+        generatedPassword,
+      );
+    } catch (error) {
+      console.error('Error sending registration email:', error);
+      // Don't fail registration if email fails
+    }
+
+    return {
+      status: 'success',
+      message: 'Company Registered Successfully.',
+    };
+  }
+
+  async login(loginDto: LoginDto) {
+    const company = await this.companyModel
+      .findOne({ email: loginDto.email.toLowerCase() })
+      .select('+password');
+
+    if (!company) {
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'No Account Found! Please enter a valid Email.',
+      });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      company.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException({
+        status: 'error',
+        message:
+          'Your credentials are not valid! Please enter a valid Email and Password.',
+      });
+    }
+
+    // Check account status
+    if (company.account_status !== '1') {
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'Account In-Active! Please Contact Greenco Team.',
+      });
+    }
+
+    // Get project
+    const project = await this.companyProjectModel.findOne({
+      company_id: company._id,
+    });
+
+    // Generate JWT token
+    const payload = {
+      sub: company._id.toString(),
+      email: company.email,
+    };
+
+    const token = this.jwtService.sign(payload);
+
+    return {
+      status: 'success',
+      message: 'Login successful',
+      data: {
+        token,
+        user: {
+          id: company._id.toString(),
+          name: company.name,
+          email: company.email,
+          mobile: company.mobile,
+          account_status: company.account_status,
+          verified_status: company.verified_status,
+        },
+        project: project
+          ? {
+              id: project._id.toString(),
+              next_activities_id: project.next_activities_id,
+            }
+          : null,
+      },
+    };
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const company = await this.companyModel.findOne({
+      email: forgotPasswordDto.email.toLowerCase(),
+    });
+
+    if (!company) {
+      throw new BadRequestException({
+        status: 'errors',
+        errors: {
+          email: ["Account doesn't exist. Please Signup to register."],
+        },
+      });
+    }
+
+    if (company.account_status !== '1') {
+      throw new BadRequestException({
+        status: 'errors',
+        errors: {
+          email: ['Account In-Active! Please Contact Greenco Team.'],
+        },
+      });
+    }
+
+    // Generate new password
+    const newPassword = passwordGeneration(12);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    company.password = hashedPassword;
+    await company.save();
+
+    // Send email
+    try {
+      await this.mailService.sendForgotPasswordEmail(company.email, newPassword);
+    } catch (error) {
+      console.error('Error sending forgot password email:', error);
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Failed to send email. Please try again later.',
+      });
+    }
+
+    return {
+      status: 'success',
+      message: 'Password sent to your email!',
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ) {
+    const company = await this.companyModel.findById(userId).select('+password');
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.current_password,
+      company.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException({
+        status: 'error',
+        message:
+          'Your current password does not matches with the password you provided. Please try again.',
+      });
+    }
+
+    // Check if new password is same as current
+    const isSamePassword = await bcrypt.compare(
+      changePasswordDto.new_password,
+      company.password,
+    );
+
+    if (isSamePassword) {
+      throw new BadRequestException({
+        status: 'error',
+        message:
+          'New Password cannot be same as your current password. Please choose a different password.',
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(changePasswordDto.new_password, 10);
+
+    // Update password
+    company.password = hashedPassword;
+    await company.save();
+
+    // Send email notification
+    try {
+      await this.mailService.sendPasswordUpdateEmail(company.email, company.name);
+    } catch (error) {
+      console.error('Error sending password update email:', error);
+      // Don't fail if email fails
+    }
+
+    return {
+      status: 'success',
+      message: 'Success! Your new Password has been updated successfully.',
+    };
+  }
+
+  async getCurrentUser(userId: string) {
+    const company = await this.companyModel.findById(userId);
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const project = await this.companyProjectModel.findOne({
+      company_id: company._id,
+    });
+
+    return {
+      status: 'success',
+      data: {
+        id: company._id.toString(),
+        name: company.name,
+        email: company.email,
+        mobile: company.mobile,
+        account_status: company.account_status,
+        verified_status: company.verified_status,
+        project: project
+          ? {
+              id: project._id.toString(),
+              next_activities_id: project.next_activities_id,
+              process_type: project.process_type,
+            }
+          : null,
+      },
+    };
+  }
+
+  async getCompaniesList(searchTerm?: string) {
+    const query: any = {};
+    if (searchTerm) {
+      query.name = { $regex: searchTerm, $options: 'i' };
+    }
+
+    const companies = await this.companyModel.find(query).select('name').limit(20);
+
+    return companies.map((company) => ({
+      value: company.name,
+    }));
+  }
+}
+
