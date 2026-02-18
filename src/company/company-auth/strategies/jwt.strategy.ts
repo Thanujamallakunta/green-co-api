@@ -22,7 +22,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const company = await this.companyModel.findById(payload.sub).select('-password');
     if (!company) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'Unauthorized. Please check your credentials.',
+      });
     }
     return { userId: payload.sub, email: payload.email };
   }
