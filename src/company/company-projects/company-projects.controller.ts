@@ -22,7 +22,7 @@ export class CompanyProjectsController {
   async getCertificateSummary(
     @Request() req,
     @Param('projectId') projectId: string,
-  ) {
+  ): Promise<any> {
     return this.companyProjectsService.getCertificateSummary(
       req.user.userId,
       projectId,
