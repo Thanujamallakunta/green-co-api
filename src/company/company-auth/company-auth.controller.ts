@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -9,6 +10,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
 import { CompanyAuthService } from './company-auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -41,7 +43,27 @@ export class CompanyAuthController {
 
   @Post('change-password')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        const errors: Record<string, string[]> = {};
+
+        validationErrors.forEach((error) => {
+          if (error.constraints) {
+            errors[error.property] = Object.values(error.constraints);
+          }
+        });
+
+        return new BadRequestException({
+          status: 'error',
+          message: 'Validation failed.',
+          errors,
+        });
+      },
+    }),
+  )
   async changePassword(
     @Request() req,
     @Body() changePasswordDto: ChangePasswordDto,

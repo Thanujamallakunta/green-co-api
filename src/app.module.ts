@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CompanyAuthModule } from './company/company-auth/company-auth.module';
+import { CompanyProjectsModule } from './company/company-projects/company-projects.module';
 import { MailModule } from './mail/mail.module';
 import { AppController } from './app.controller';
 
@@ -22,6 +23,7 @@ import { AppController } from './app.controller';
       inject: [ConfigService],
     }),
     CompanyAuthModule,
+    CompanyProjectsModule,
     MailModule,
   ],
   controllers: [AppController],

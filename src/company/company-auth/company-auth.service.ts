@@ -230,14 +230,19 @@ export class CompanyAuthService {
     company.password = hashedPassword;
     await company.save();
 
-    // Send email in background (non-blocking)
-    // Password is already updated, so we return success immediately
-    this.mailService
-      .sendForgotPasswordEmail(company.email, newPassword)
-      .catch((error) => {
-        console.error('Error sending forgot password email:', error);
-        // Log error but don't fail the request since password is already updated
+    // Send email (must succeed, otherwise return error to frontend)
+    try {
+      await this.mailService.sendForgotPasswordEmail(
+        company.email,
+        newPassword,
+      );
+    } catch (error) {
+      console.error('Error sending forgot password email:', error);
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Failed to send email. Please try again later.',
       });
+    }
 
     return {
       status: 'success',
