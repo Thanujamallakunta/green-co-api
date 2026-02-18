@@ -8,9 +8,30 @@ async function bootstrap() {
   });
 
   // Enable CORS
+  const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
+    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'];
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // For development, allow localhost on any port
+        if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Global validation pipe
