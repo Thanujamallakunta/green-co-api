@@ -10,7 +10,7 @@ async function bootstrap() {
   // Enable CORS
   const allowedOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
-    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', "https://cursor-greenco-mern.vercel.app/"];
+    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', "https://cursor-greenco-mern.vercel.app"];
 
   app.enableCors({
     origin: (origin, callback) => {
