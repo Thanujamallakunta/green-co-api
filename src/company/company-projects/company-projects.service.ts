@@ -56,6 +56,7 @@ export class CompanyProjectsService {
 
     const score_band_status = (project.score_band_status || 0) as 0 | 1;
 
+    // Return format that matches frontend expectations
     return {
       status: 'success',
       message: 'Certificate data loaded',
