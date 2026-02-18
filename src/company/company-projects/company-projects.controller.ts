@@ -5,6 +5,7 @@ import {
   Request,
   Res,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { CompanyProjectsService } from './company-projects.service';
@@ -36,18 +37,30 @@ export class CompanyProjectsController {
     @Param('projectId') projectId: string,
     @Res() res: Response,
   ) {
-    const pdfPath = await this.companyProjectsService.getScoreBandPdfPath(
-      req.user.userId,
-      projectId,
-    );
+    try {
+      const pdfPath = await this.companyProjectsService.getScoreBandPdfPath(
+        req.user.userId,
+        projectId,
+      );
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="Score_Band.pdf"',
-    );
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="Score_Band.pdf"',
+      );
 
-    return res.sendFile(pdfPath);
+      return res.sendFile(pdfPath);
+    } catch (error) {
+      // If it's already a NotFoundException with proper format, re-throw it
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      // For any other errors, return generic error
+      return res.status(500).json({
+        status: 'error',
+        message: 'Failed to download score band PDF',
+      });
+    }
   }
 }
 

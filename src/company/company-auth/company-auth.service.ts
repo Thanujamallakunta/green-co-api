@@ -192,6 +192,7 @@ export class CompanyAuthService {
         project: project
           ? {
               id: project._id.toString(),
+              name: company.name,
               next_activities_id: project.next_activities_id,
             }
           : null,

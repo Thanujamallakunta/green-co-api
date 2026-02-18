@@ -9,25 +9,6 @@ import { Company, CompanyDocument } from '../schemas/company.schema';
 import { join } from 'path';
 import * as fs from 'fs';
 
-interface CertificateDocument {
-  url: string;
-  filename: string;
-}
-
-interface CertificateSummary {
-  projectId: string;
-  company_name?: string;
-  certificate_document: CertificateDocument | null;
-  feedback_document: CertificateDocument | null;
-  score_band_status: 0 | 1;
-  score_band?: {
-    percentage_score: number;
-    criteria_projectscore: any[];
-    high_projectscore: any[];
-    max_score: any[];
-  };
-}
-
 @Injectable()
 export class CompanyProjectsService {
   constructor(
@@ -40,56 +21,54 @@ export class CompanyProjectsService {
   async getCertificateSummary(
     companyId: string,
     projectId: string,
-  ): Promise<{ status: 'success'; data: CertificateSummary }> {
+  ): Promise<{
+    status: 'success';
+    message: string;
+    data: {
+      profile: {
+        id: string;
+        name: string | undefined;
+        certificate_document: string | null;
+        feedback_document: string | null;
+        score_band_status: 0 | 1;
+      };
+      percentage_score: number;
+    };
+  }> {
     const project = await this.projectModel.findOne({
       _id: projectId,
       company_id: companyId,
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Project not found',
+      });
     }
 
     const company = await this.companyModel.findById(project.company_id);
 
-    const certificate_document: CertificateDocument | null =
-      project.certificate_document_url && project.certificate_document_filename
-        ? {
-            url: project.certificate_document_url,
-            filename: project.certificate_document_filename,
-          }
-        : null;
+    const certificate_document =
+      project.certificate_document_url || null;
 
-    const feedback_document: CertificateDocument | null =
-      project.feedback_document_url && project.feedback_document_filename
-        ? {
-            url: project.feedback_document_url,
-            filename: project.feedback_document_filename,
-          }
-        : null;
+    const feedback_document = project.feedback_document_url || null;
 
     const score_band_status = (project.score_band_status || 0) as 0 | 1;
 
-    const summary: CertificateSummary = {
-      projectId: project._id.toString(),
-      company_name: company?.name,
-      certificate_document,
-      feedback_document,
-      score_band_status,
-    };
-
-    if (score_band_status === 1) {
-      summary.score_band = {
-        percentage_score: project.percentage_score || 0,
-        criteria_projectscore: project.criteria_projectscore || [],
-        high_projectscore: project.high_projectscore || [],
-        max_score: project.max_score || [],
-      };
-    }
-
     return {
       status: 'success',
-      data: summary,
+      message: 'Certificate data loaded',
+      data: {
+        profile: {
+          id: project._id.toString(),
+          name: company?.name,
+          certificate_document,
+          feedback_document,
+          score_band_status,
+        },
+        percentage_score: project.percentage_score || 0,
+      },
     };
   }
 
@@ -100,18 +79,27 @@ export class CompanyProjectsService {
     });
 
     if (!project) {
-      throw new NotFoundException('Project not found');
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Project not found',
+      });
     }
 
     if (!project.score_band_pdf_path) {
-      throw new NotFoundException('Score band PDF not available');
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Score band not available',
+      });
     }
 
     const relativePath = project.score_band_pdf_path;
     const absolutePath = join(process.cwd(), relativePath);
 
     if (!fs.existsSync(absolutePath)) {
-      throw new NotFoundException('Score band PDF file not found on server');
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Score band PDF file not found on server',
+      });
     }
 
     return absolutePath;

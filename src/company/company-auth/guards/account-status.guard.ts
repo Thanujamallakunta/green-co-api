@@ -19,19 +19,26 @@ export class AccountStatusGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.userId) {
-      throw new UnauthorizedException('Unauthorized');
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'Unauthorized. Please check your credentials.',
+      });
     }
 
     const company = await this.companyModel.findById(user.userId);
 
     if (!company) {
-      throw new UnauthorizedException('Account not found');
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'Unauthorized. Please check your credentials.',
+      });
     }
 
     if (company.account_status !== '1') {
-      throw new UnauthorizedException(
-        'Account In-Active! Please Contact Greenco Team.',
-      );
+      throw new UnauthorizedException({
+        status: 'error',
+        message: 'Account In-Active! Please Contact Greenco Team.',
+      });
     }
 
     // Note: The API spec mentions "disapproved" status, but the schema only has account_status
