@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { Types } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Company, CompanyDocument } from '../schemas/company.schema';
@@ -18,6 +19,11 @@ import {
   CompanyFacilitator,
   CompanyFacilitatorDocument,
 } from '../schemas/company-facilitator.schema';
+import {
+  CompanyActivity,
+  CompanyActivityDocument,
+} from '../schemas/company-activity.schema';
+import { Facilitator, FacilitatorDocument } from '../schemas/facilitator.schema';
 import { MailService } from '../../mail/mail.service';
 import { passwordGeneration } from '../../helpers/password.helper';
 import { RegisterDto } from './dto/register.dto';
@@ -33,6 +39,10 @@ export class CompanyAuthService {
     private companyProjectModel: Model<CompanyProjectDocument>,
     @InjectModel(CompanyFacilitator.name)
     private companyFacilitatorModel: Model<CompanyFacilitatorDocument>,
+    @InjectModel(CompanyActivity.name)
+    private companyActivityModel: Model<CompanyActivityDocument>,
+    @InjectModel(Facilitator.name)
+    private facilitatorModel: Model<FacilitatorDocument>,
     private jwtService: JwtService,
     private mailService: MailService,
   ) {}
@@ -44,10 +54,8 @@ export class CompanyAuthService {
     });
     if (existingEmail) {
       throw new ConflictException({
-        status: 'errors',
-        errors: {
-          email: ['The Account already exists with this Email Address'],
-        },
+        status: 'error',
+        message: 'Email already exists',
       });
     }
 
@@ -57,21 +65,36 @@ export class CompanyAuthService {
     });
     if (existingMobile) {
       throw new ConflictException({
-        status: 'errors',
-        errors: {
-          mobileno: ['Mobile number already exists'],
-        },
+        status: 'error',
+        message: 'Mobile number already exists',
       });
     }
 
     // Validate mobile number format
     if (!/^[6-9]\d{9}$/.test(registerDto.mobileno)) {
       throw new BadRequestException({
-        status: 'errors',
+        status: 'error',
+        message: 'Validation failed',
         errors: {
-          mobileno: ['Please Enter a Valid Mobile Number'],
+          mobileno: ['The mobile number must start with 6, 7, 8, or 9'],
         },
       });
+    }
+
+    // Validate facilitator if facilitator type is selected
+    if (registerDto.assessment === 'facilitator' && registerDto.selectfacilitator) {
+      const facilitator = await this.facilitatorModel.findById(
+        registerDto.selectfacilitator,
+      );
+      if (!facilitator || facilitator.status !== '1') {
+        throw new BadRequestException({
+          status: 'error',
+          message: 'Validation failed',
+          errors: {
+            selectfacilitator: ['The selected facilitator is invalid or inactive'],
+          },
+        });
+      }
     }
 
     // Generate password
@@ -101,12 +124,26 @@ export class CompanyAuthService {
 
     const savedProject = await project.save();
 
+    // Log initial CII activity: Milestone 1 completed (registration)
+    await this.companyActivityModel.create({
+      company_id: savedCompany._id,
+      project_id: savedProject._id,
+      description: 'Plant registers for GreenCo Rating Online',
+      activity_type: 'cii',
+      milestone_flow: 1,
+      milestone_completed: true,
+    });
+
+    // Set next milestone to step 2 (GreenCo Launch & Handholding)
+    savedProject.next_activities_id = 2;
+    await savedProject.save();
+
     // Create facilitator assignment if assessment is facilitator
     if (registerDto.assessment === 'facilitator' && registerDto.selectfacilitator) {
       const facilitator = new this.companyFacilitatorModel({
         company_id: savedCompany._id,
         project_id: savedProject._id,
-        facilitator_id: registerDto.selectfacilitator,
+        facilitator_id: new Types.ObjectId(registerDto.selectfacilitator),
       });
       await facilitator.save();
     }

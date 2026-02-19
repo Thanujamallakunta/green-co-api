@@ -14,6 +14,11 @@ import {
   CompanyFacilitator,
   CompanyFacilitatorSchema,
 } from '../schemas/company-facilitator.schema';
+import { Facilitator, FacilitatorSchema } from '../schemas/facilitator.schema';
+import {
+  CompanyActivity,
+  CompanyActivitySchema,
+} from '../schemas/company-activity.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
 
@@ -34,6 +39,8 @@ import { MailModule } from '../../mail/mail.module';
       { name: Company.name, schema: CompanySchema },
       { name: CompanyProject.name, schema: CompanyProjectSchema },
       { name: CompanyFacilitator.name, schema: CompanyFacilitatorSchema },
+      { name: Facilitator.name, schema: FacilitatorSchema },
+      { name: CompanyActivity.name, schema: CompanyActivitySchema },
     ]),
     MailModule,
   ],

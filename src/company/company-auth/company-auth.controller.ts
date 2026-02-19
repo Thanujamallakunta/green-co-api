@@ -24,7 +24,27 @@ export class CompanyAuthController {
   constructor(private readonly companyAuthService: CompanyAuthService) {}
 
   @Post('register')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        const errors: Record<string, string[]> = {};
+
+        validationErrors.forEach((error) => {
+          if (error.constraints) {
+            errors[error.property] = Object.values(error.constraints);
+          }
+        });
+
+        return new BadRequestException({
+          status: 'error',
+          message: 'Validation failed',
+          errors,
+        });
+      },
+    }),
+  )
   async register(@Body() registerDto: RegisterDto) {
     return this.companyAuthService.register(registerDto);
   }

@@ -46,6 +46,12 @@ export class CompanyProject {
   // Optional path to generated score band PDF
   @Prop()
   score_band_pdf_path?: string;
+
+  @Prop()
+  proposal_document?: string;
+
+  @Prop()
+  project_id?: string; // Project code/identifier
 }
 
 export const CompanyProjectSchema = SchemaFactory.createForClass(CompanyProject);

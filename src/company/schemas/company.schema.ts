@@ -22,6 +22,18 @@ export class Company {
 
   @Prop({ default: '0' }) // '1' = verified, '0' = not verified
   verified_status: string;
+
+  @Prop()
+  reg_id?: string;
+
+  @Prop()
+  turnover?: string;
+
+  @Prop()
+  mst_sector_id?: string;
+
+  @Prop()
+  status_updated_at?: Date;
 }
 
 export const CompanySchema = SchemaFactory.createForClass(Company);

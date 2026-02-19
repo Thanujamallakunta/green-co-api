@@ -1,10 +1,14 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
+  Post,
   Request,
   Res,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -13,6 +17,7 @@ import { JwtAuthGuard } from '../company-auth/guards/jwt-auth.guard';
 import { AccountStatusGuard } from '../company-auth/guards/account-status.guard';
 import { join } from 'path';
 import * as fs from 'fs';
+import { CompleteMilestoneDto } from './dto/complete-milestone.dto';
 
 @Controller('api/company/projects')
 export class CompanyProjectsController {
@@ -20,18 +25,13 @@ export class CompanyProjectsController {
     private readonly companyProjectsService: CompanyProjectsService,
   ) {}
 
-  @Get(':projectId/certificate')
-  @UseGuards(JwtAuthGuard, AccountStatusGuard)
-  async getCertificateSummary(
-    @Request() req,
-    @Param('projectId') projectId: string,
-  ): Promise<any> {
-    return this.companyProjectsService.getCertificateSummary(
-      req.user.userId,
-      projectId,
-    );
+  // Test route to verify controller is working
+  @Get('test')
+  testRoute() {
+    return { status: 'success', message: 'CompanyProjectsController is working' };
   }
 
+  // More specific routes first to avoid route conflicts
   @Get(':projectId/scoreband-download')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
   async downloadScoreBand(
@@ -39,11 +39,14 @@ export class CompanyProjectsController {
     @Param('projectId') projectId: string,
     @Res() res: Response,
   ) {
+    console.log(`[ScoreBand Download] Request received for projectId: ${projectId}`);
     try {
       const pdfPath = await this.companyProjectsService.getScoreBandPdfPath(
         req.user.userId,
         projectId,
       );
+
+      console.log(`[ScoreBand Download] PDF path: ${pdfPath}`);
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
@@ -53,6 +56,7 @@ export class CompanyProjectsController {
 
       return res.sendFile(pdfPath);
     } catch (error) {
+      console.error(`[ScoreBand Download] Error:`, error);
       // If it's already a NotFoundException with proper format, re-throw it
       if (error instanceof NotFoundException) {
         throw error;
@@ -65,7 +69,6 @@ export class CompanyProjectsController {
     }
   }
 
-  // Serve certificate document
   @Get(':projectId/certificate-document')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
   async getCertificateDocument(
@@ -103,7 +106,6 @@ export class CompanyProjectsController {
     return res.sendFile(filePath);
   }
 
-  // Serve feedback document
   @Get(':projectId/feedback-document')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
   async getFeedbackDocument(
@@ -139,5 +141,44 @@ export class CompanyProjectsController {
     );
 
     return res.sendFile(filePath);
+  }
+
+  @Get(':projectId/certificate')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  async getCertificateSummary(
+    @Request() req,
+    @Param('projectId') projectId: string,
+  ): Promise<any> {
+    return this.companyProjectsService.getCertificateSummary(
+      req.user.userId,
+      projectId,
+    );
+  }
+
+  @Get(':projectId/quickview')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  async getQuickview(
+    @Request() req,
+    @Param('projectId') projectId: string,
+  ): Promise<any> {
+    return this.companyProjectsService.getQuickviewData(
+      req.user.userId,
+      projectId,
+    );
+  }
+
+  @Post(':projectId/milestones')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async completeMilestone(
+    @Request() req,
+    @Param('projectId') projectId: string,
+    @Body() dto: CompleteMilestoneDto,
+  ): Promise<any> {
+    return this.companyProjectsService.completeMilestone(
+      req.user.userId,
+      projectId,
+      dto,
+    );
   }
 }
