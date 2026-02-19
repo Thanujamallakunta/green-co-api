@@ -52,6 +52,11 @@ export class CompanyProject {
 
   @Prop()
   project_id?: string; // Project code/identifier
+
+  // Raw registration info from the big Registration Info form
+  // (industry/entity/sector/state, addresses, SEZ, turnover, etc.)
+  @Prop({ type: Object, default: {} })
+  registration_info?: Record<string, any>;
 }
 
 export const CompanyProjectSchema = SchemaFactory.createForClass(CompanyProject);

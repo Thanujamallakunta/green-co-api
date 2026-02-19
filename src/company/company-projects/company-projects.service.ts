@@ -159,6 +159,68 @@ export class CompanyProjectsService {
     return absolutePath;
   }
 
+  async saveRegistrationInfo(
+    companyId: string,
+    projectId: string,
+    dto: Record<string, any>,
+  ) {
+    const project = await this.projectModel.findOne({
+      _id: projectId,
+      company_id: companyId,
+    });
+
+    if (!project) {
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Project not found',
+      });
+    }
+
+    // Store raw form data under registration_info
+    project.registration_info = {
+      ...(project.registration_info || {}),
+      ...dto,
+    };
+    await project.save();
+
+    // Optionally mirror some fields onto Company for Quickview/profile
+    const company = await this.companyModel.findById(companyId);
+    if (company) {
+      if (dto.sector_id) {
+        company.mst_sector_id = dto.sector_id;
+      }
+      if (dto.turnover) {
+        company.turnover = dto.turnover;
+      }
+      await company.save();
+    }
+
+    return {
+      status: 'success',
+      message: 'Registration info saved successfully',
+    };
+  }
+
+  async getRegistrationInfo(companyId: string, projectId: string) {
+    const project = await this.projectModel.findOne({
+      _id: projectId,
+      company_id: companyId,
+    });
+
+    if (!project) {
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Project not found',
+      });
+    }
+
+    return {
+      status: 'success',
+      message: 'Registration info loaded successfully',
+      data: project.registration_info || {},
+    };
+  }
+
   async completeMilestone(
     companyId: string,
     projectId: string,

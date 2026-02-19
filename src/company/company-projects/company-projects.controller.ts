@@ -18,6 +18,7 @@ import { AccountStatusGuard } from '../company-auth/guards/account-status.guard'
 import { join } from 'path';
 import * as fs from 'fs';
 import { CompleteMilestoneDto } from './dto/complete-milestone.dto';
+import { RegistrationInfoDto } from './dto/registration-info.dto';
 
 @Controller('api/company/projects')
 export class CompanyProjectsController {
@@ -179,6 +180,33 @@ export class CompanyProjectsController {
       req.user.userId,
       projectId,
       dto,
+    );
+  }
+
+  @Post(':projectId/registration-info')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async saveRegistrationInfo(
+    @Request() req,
+    @Param('projectId') projectId: string,
+    @Body() dto: RegistrationInfoDto,
+  ): Promise<any> {
+    return this.companyProjectsService.saveRegistrationInfo(
+      req.user.userId,
+      projectId,
+      dto,
+    );
+  }
+
+  @Get(':projectId/registration-info')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  async getRegistrationInfo(
+    @Request() req,
+    @Param('projectId') projectId: string,
+  ): Promise<any> {
+    return this.companyProjectsService.getRegistrationInfo(
+      req.user.userId,
+      projectId,
     );
   }
 }
