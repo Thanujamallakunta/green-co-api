@@ -15,6 +15,7 @@ import { Sector, SectorDocument } from '../schemas/sector.schema';
 import { Facilitator, FacilitatorDocument } from '../schemas/facilitator.schema';
 import { Coordinator, CoordinatorDocument } from '../schemas/coordinator.schema';
 import { Assessor, AssessorDocument } from '../schemas/assessor.schema';
+import { RegistrationInfoDto } from './dto/registration-info.dto';
 import { join } from 'path';
 import * as fs from 'fs';
 
@@ -162,7 +163,7 @@ export class CompanyProjectsService {
   async saveRegistrationInfo(
     companyId: string,
     projectId: string,
-    dto: Record<string, any>,
+    dto: RegistrationInfoDto,
   ) {
     const project = await this.projectModel.findOne({
       _id: projectId,
@@ -176,10 +177,25 @@ export class CompanyProjectsService {
       });
     }
 
+    // Normalize field names (handle alternative naming from frontend)
+    const normalizedData: any = { ...dto };
+    
+    // Normalize pan_no -> pan_number
+    if (dto.pan_no && !dto.pan_number) {
+      normalizedData.pan_number = dto.pan_no;
+      delete normalizedData.pan_no;
+    }
+    
+    // Normalize gstin_no -> gstin
+    if (dto.gstin_no && !dto.gstin) {
+      normalizedData.gstin = dto.gstin_no;
+      delete normalizedData.gstin_no;
+    }
+
     // Store raw form data under registration_info
     project.registration_info = {
       ...(project.registration_info || {}),
-      ...dto,
+      ...normalizedData,
     };
     await project.save();
 

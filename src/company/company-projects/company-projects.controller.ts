@@ -185,7 +185,13 @@ export class CompanyProjectsController {
 
   @Post(':projectId/registration-info')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @UsePipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false, // Allow extra fields, just ignore them
+    }),
+  )
   async saveRegistrationInfo(
     @Request() req,
     @Param('projectId') projectId: string,
