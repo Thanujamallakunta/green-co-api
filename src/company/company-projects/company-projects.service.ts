@@ -49,10 +49,20 @@ export class CompanyProjectsService {
 
     const company = await this.companyModel.findById(project.company_id);
 
-    const certificate_document =
-      project.certificate_document_url || null;
+    // Convert relative paths to full URLs for frontend
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001';
+    
+    const certificate_document = project.certificate_document_url
+      ? project.certificate_document_url.startsWith('http')
+        ? project.certificate_document_url
+        : `${baseUrl}/api/company/projects/${projectId}/certificate-document`
+      : null;
 
-    const feedback_document = project.feedback_document_url || null;
+    const feedback_document = project.feedback_document_url
+      ? project.feedback_document_url.startsWith('http')
+        ? project.feedback_document_url
+        : `${baseUrl}/api/company/projects/${projectId}/feedback-document`
+      : null;
 
     const score_band_status = (project.score_band_status || 0) as 0 | 1;
 
@@ -71,6 +81,22 @@ export class CompanyProjectsService {
         percentage_score: project.percentage_score || 0,
       },
     };
+  }
+
+  async getProject(companyId: string, projectId: string) {
+    const project = await this.projectModel.findOne({
+      _id: projectId,
+      company_id: companyId,
+    });
+
+    if (!project) {
+      throw new NotFoundException({
+        status: 'error',
+        message: 'Project not found',
+      });
+    }
+
+    return project;
   }
 
   async getScoreBandPdfPath(companyId: string, projectId: string): Promise<string> {
