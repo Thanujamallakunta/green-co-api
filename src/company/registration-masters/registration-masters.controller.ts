@@ -24,6 +24,15 @@ export class RegistrationMastersController {
   }
 
   /**
+   * GET /api/company/states
+   * Returns all states (id, name, code) for dropdowns and filters.
+   */
+  @Get('states')
+  async getAllStates() {
+    return this.registrationMastersService.getAllStates();
+  }
+
+  /**
    * GET /api/company/groups-sectors
    * Returns distinct groups and all sectors (with group_name) for GROUP / SECTOR UI (e.g. Primary Data checklist page).
    */

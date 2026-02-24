@@ -84,6 +84,20 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
+  // Ensure OPTIONS (preflight) never returns 404: handle it early so browser gets 200 and sends the real request.
+  app.use((req, res, next) => {
+    if (req.method === 'OPTIONS') {
+      const origin = req.headers.origin || '*';
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.status(200).end();
+      return;
+    }
+    next();
+  });
+
   // Global exception filter to format all errors consistently
   app.useGlobalFilters(new HttpExceptionFilter());
 

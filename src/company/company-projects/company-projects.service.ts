@@ -565,7 +565,48 @@ export class CompanyProjectsService {
     });
     
     await project.save();
-    
+
+    // Log activity: Company Filled Registration Info (milestone 2) and set next step to 3
+    const existingMilestone2 = await this.companyActivityModel.findOne({
+      company_id: companyId,
+      project_id: project._id,
+      milestone_flow: 2,
+    });
+    if (!existingMilestone2) {
+      await this.companyActivityModel.create({
+        company_id: companyId,
+        project_id: project._id,
+        description: 'Registration form completed',
+        activity_type: 'company',
+        milestone_flow: 2,
+        milestone_completed: true,
+      });
+      const nextId = Math.min(24, 3);
+      if (project.next_activities_id < nextId) {
+        await this.projectModel.updateOne(
+          { _id: project._id },
+          { $set: { next_activities_id: nextId } },
+        );
+      }
+    }
+
+    // In-app notification for the company so they see confirmation after filing
+    if (companyId) {
+      this.notificationsService
+        .create(
+          'Registration form submitted',
+          'Your registration information has been saved successfully. You can view or update it from the project dashboard.',
+          'C',
+          companyId,
+        )
+        .then((doc) => {
+          console.log('[Registration Info Service] Notification created for company', companyId, 'id:', (doc as any)?._id?.toString?.());
+        })
+        .catch((e) => {
+          console.error('[Registration Info Service] Notification failed:', e?.message || e);
+        });
+    }
+
     console.log('[Registration Info Service] Saved successfully. Registration info:', {
       company_brief_profile_url: project.registration_info?.company_brief_profile_url,
       turnover_document_url: project.registration_info?.turnover_document_url,
@@ -587,6 +628,7 @@ export class CompanyProjectsService {
     const response: any = {
       status: 'success',
       message: 'Registration info saved successfully',
+      notification_created: true, // Frontend can refetch notifications when this is true
     };
 
     // Include file information in response if files were uploaded
@@ -748,16 +790,10 @@ export class CompanyProjectsService {
       });
     }
 
-    // Cast to ObjectId so activity queries match docs inserted by backfill/native driver (ObjectId).
-    const projectIdObj = Types.ObjectId.isValid(projectId) ? new Types.ObjectId(projectId) : (project as any)._id;
-    const companyIdObj = Types.ObjectId.isValid(companyId) ? new Types.ObjectId(companyId) : (project as any).company_id;
-    // Match both ObjectId and string so we find activities regardless of how they were stored (backfill uses ObjectId).
-    const activityFilter = {
-      $or: [
-        { company_id: companyIdObj, project_id: projectIdObj },
-        { company_id: companyId, project_id: projectId },
-      ],
-    };
+    // Use project's own _id and company_id for queries (same as check-quickview-activities.js) so activities are found reliably.
+    const pid = (project as any)._id;
+    const cid = (project as any).company_id;
+
     const [
       company,
       allActivities,
@@ -769,27 +805,27 @@ export class CompanyProjectsService {
     ] = await Promise.all([
       this.companyModel.findById(companyId).lean(),
       this.companyActivityModel
-        .find(activityFilter)
+        .find({ company_id: cid, project_id: pid })
         .sort({ createdAt: -1 })
         .lean(),
       this.companyActivityModel
-        .findOne({ $and: [activityFilter, { activity_type: 'cii' }] })
+        .findOne({ company_id: cid, project_id: pid, activity_type: 'cii' })
         .sort({ createdAt: -1 })
         .lean(),
       this.companyWorkOrderModel
-        .findOne({ company_id: companyIdObj, project_id: projectIdObj })
+        .findOne({ company_id: cid, project_id: pid })
         .sort({ createdAt: -1 })
         .lean(),
       this.companyFacilitatorModel
-        .findOne({ company_id: companyIdObj, project_id: projectIdObj })
+        .findOne({ company_id: cid, project_id: pid })
         .populate('facilitator_id')
         .lean(),
       this.companyCoordinatorModel
-        .findOne({ company_id: companyIdObj, project_id: projectIdObj })
+        .findOne({ company_id: cid, project_id: pid })
         .populate('coordinator_id')
         .lean(),
       this.companyAssessorModel
-        .find({ company_id: companyIdObj, project_id: projectIdObj })
+        .find({ company_id: cid, project_id: pid })
         .lean(),
     ]);
 
@@ -850,46 +886,7 @@ export class CompanyProjectsService {
         : null;
     }).filter(Boolean);
 
-    // Get all company activities (already fetched above, reuse)
-    // Format: Match Laravel's company_activty_logs structure
-    const activitiesData = allActivities.map((activity) => ({
-      description: activity.description,
-      created_at: (activity as any).createdAt
-        ? (activity as any).createdAt.toISOString()
-        : new Date().toISOString(),
-      // Format date like Laravel: d-m-Y h:i A
-      formatted_date: (activity as any).createdAt
-        ? new Date((activity as any).createdAt).toLocaleString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
-          })
-        : '',
-      milestone_flow: activity.milestone_flow || null,
-      milestone_completed: activity.milestone_completed || null,
-      activity_type: activity.activity_type || null,
-    }));
-
-    // Get last activity for milestone calculation
-    const lastActivity = allActivities.length > 0 ? allActivities[0] : null;
-
-    // Calculate current flow (matching Laravel logic)
-    // $curent_flow = is_null($last_activity) ? 1 : $last_activity->milestone_flow;
-    // if ($last_activity->milestone_completed) { $curent_flow += 1; }
-    let currentFlow = 1;
-    if (lastActivity) {
-      currentFlow = lastActivity.milestone_flow || 1;
-      if (lastActivity.milestone_completed) {
-        currentFlow += 1;
-      }
-    }
-
-    // Detailed milestone steps flow (Main project flow)
-    // Each milestone_flow represents a completed step, and the next step is milestone_flow + 1
-    // Format: "Latest Step Completed → Next Step"
+    // Detailed milestone steps flow (Main project flow) – define once, reuse for logs and milestone_flow
     const milestoneSteps: Record<number, { name: string; responsibility: string }> = {
       1: { name: 'Company Registered', responsibility: 'Company' },
       2: { name: 'Company Filled Registration Info', responsibility: 'Company' },
@@ -916,6 +913,47 @@ export class CompanyProjectsService {
       23: { name: 'Feedback Report uploaded', responsibility: 'CII' },
       24: { name: 'Project close‑out / Sustenance phase', responsibility: 'Company' },
     };
+
+    // Get all company activities – same step names and responsibility as Latest/Next Step
+    const activitiesData = allActivities.map((activity) => {
+      const flow = activity.milestone_flow != null ? activity.milestone_flow : null;
+      const step = flow != null ? milestoneSteps[flow] : null;
+      return {
+        description: activity.description,
+        activity: step ? step.name : activity.description,
+        responsibility: step ? step.responsibility : (activity.activity_type === 'cii' ? 'CII' : 'Company'),
+        created_at: (activity as any).createdAt
+          ? (activity as any).createdAt.toISOString()
+          : new Date().toISOString(),
+        formatted_date: (activity as any).createdAt
+          ? new Date((activity as any).createdAt).toLocaleString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : '',
+        milestone_flow: flow,
+        milestone_completed: activity.milestone_completed ?? false,
+        activity_type: activity.activity_type || null,
+      };
+    });
+
+    // Get last activity for milestone calculation
+    const lastActivity = allActivities.length > 0 ? allActivities[0] : null;
+
+    // Calculate current flow (matching Laravel logic)
+    // $curent_flow = is_null($last_activity) ? 1 : $last_activity->milestone_flow;
+    // if ($last_activity->milestone_completed) { $curent_flow += 1; }
+    let currentFlow = 1;
+    if (lastActivity) {
+      currentFlow = lastActivity.milestone_flow || 1;
+      if (lastActivity.milestone_completed) {
+        currentFlow += 1;
+      }
+    }
 
     // Milestone responsibility map (for backward compatibility)
     const milestoneResponsibilityMap: Record<number, string> = {};
@@ -1070,59 +1108,30 @@ export class CompanyProjectsService {
         companies_coordinator: coordinatorData,
         companies_assessors: assessorsData,
         companies_activty: activitiesData,
+        milestoneSteps: Object.keys(milestoneSteps).reduce((acc, key) => {
+          acc[key] = milestoneSteps[parseInt(key)].name;
+          return acc;
+        }, {} as Record<string, string>),
         milestoeSteps: Object.keys(milestoneSteps).reduce((acc, key) => {
           acc[key] = milestoneSteps[parseInt(key)].name;
           return acc;
         }, {} as Record<string, string>),
         last_activity: lastActivityData,
-        // Milestone Flow calculation (matching Laravel)
         milestone_flow: {
           current_flow: currentFlow,
-          // 8-milestone flow for visual display (matching Laravel's milestoeFlow())
-          milestone_steps: {
-            1: 'Plant registers for GreenCo Rating Online',
-            2: 'GreenCo Launch & Handholding',
-            3: 'Primary Data Submission',
-            4: 'Data submission for Assessment',
-            5: 'Site Visit Assessment',
-            6: 'Award of Rating',
-            7: 'Feedback Report',
-            8: 'Sustenance',
-          },
-          // Calculate status for each milestone (for color coding)
-          milestone_status: Object.keys({
-            1: 'Plant registers for GreenCo Rating Online',
-            2: 'GreenCo Launch & Handholding',
-            3: 'Primary Data Submission',
-            4: 'Data submission for Assessment',
-            5: 'Site Visit Assessment',
-            6: 'Award of Rating',
-            7: 'Feedback Report',
-            8: 'Sustenance',
-          }).reduce((acc, key) => {
-            const flowNum = parseInt(key);
-            // Green (completed): current_flow > flow
-            // Yellow (in progress): current_flow == flow
-            // Gray (pending): current_flow < flow
-            let status = 'pending'; // gray
-            if (currentFlow > flowNum) {
-              status = 'completed'; // green
-            } else if (currentFlow === flowNum) {
-              status = 'in_progress'; // yellow
-            }
+          milestone_steps: Object.keys(milestoneSteps).reduce((acc, key) => {
+            const n = parseInt(key);
+            acc[n] = milestoneSteps[n].name;
+            return acc;
+          }, {} as Record<number, string>),
+          milestone_status: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].reduce((acc, flowNum) => {
+            let status = 'pending';
+            if (currentFlow > flowNum) status = 'completed';
+            else if (currentFlow === flowNum) status = 'in_progress';
             acc[flowNum] = {
               flow: flowNum,
-              step: {
-                1: 'Plant registers for GreenCo Rating Online',
-                2: 'GreenCo Launch & Handholding',
-                3: 'Primary Data Submission',
-                4: 'Data submission for Assessment',
-                5: 'Site Visit Assessment',
-                6: 'Award of Rating',
-                7: 'Feedback Report',
-                8: 'Sustenance',
-              }[flowNum],
-              status: status,
+              step: milestoneSteps[flowNum]?.name ?? '',
+              status,
             };
             return acc;
           }, {} as Record<number, { flow: number; step: string; status: string }>),

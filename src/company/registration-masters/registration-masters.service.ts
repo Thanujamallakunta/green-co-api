@@ -165,6 +165,43 @@ export class RegistrationMastersService {
   }
 
   /**
+   * Get all states (for dropdowns, filters, etc.).
+   * Returns active states first; falls back to all if none have status = 1.
+   */
+  async getAllStates(): Promise<{
+    status: 'success';
+    message: string;
+    data: { states: Array<{ id: string; name: string; code?: string }> };
+  }> {
+    const statesFiltered = await this.stateModel
+      .find({
+        $or: [
+          { status: 1 },
+          { status: '1' },
+          { status: { $exists: false } },
+        ],
+      })
+      .sort({ name: 1 })
+      .select('_id name code')
+      .lean();
+    const states =
+      statesFiltered.length > 0
+        ? statesFiltered
+        : await this.stateModel.find({}).sort({ name: 1 }).select('_id name code').lean();
+    return {
+      status: 'success',
+      message: 'States loaded',
+      data: {
+        states: (states as any[]).map((s) => ({
+          id: s._id.toString(),
+          name: s.name,
+          code: s.code || undefined,
+        })),
+      },
+    };
+  }
+
+  /**
    * Get distinct groups and all sectors (for Primary Data / checklist page: GROUP and SECTOR dropdowns).
    */
   async getGroupsAndSectors(): Promise<{
