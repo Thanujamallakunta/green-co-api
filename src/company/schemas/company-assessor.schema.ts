@@ -19,4 +19,7 @@ export class CompanyAssessor {
 }
 
 export const CompanyAssessorSchema = SchemaFactory.createForClass(CompanyAssessor);
+CompanyAssessorSchema.index({ company_id: 1, project_id: 1 });
+
+
 

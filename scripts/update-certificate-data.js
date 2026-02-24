@@ -134,3 +134,5 @@ async function updateCertificateData() {
 // Run the script
 updateCertificateData();
 
+
+

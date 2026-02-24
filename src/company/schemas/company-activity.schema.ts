@@ -25,4 +25,8 @@ export class CompanyActivity {
 }
 
 export const CompanyActivitySchema = SchemaFactory.createForClass(CompanyActivity);
+CompanyActivitySchema.index({ company_id: 1, project_id: 1 });
+CompanyActivitySchema.index({ company_id: 1, project_id: 1, createdAt: -1 });
+
+
 

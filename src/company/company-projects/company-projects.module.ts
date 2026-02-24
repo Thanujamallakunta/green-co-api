@@ -27,6 +27,14 @@ import {
   CompanyWorkOrder,
   CompanyWorkOrderSchema,
 } from '../schemas/company-workorder.schema';
+import {
+  CompanyResourceDocument,
+  CompanyResourceDocumentSchema,
+} from '../schemas/company-resource-document.schema';
+import {
+  CompanyInvoice,
+  CompanyInvoiceSchema,
+} from '../schemas/company-invoice.schema';
 import { Sector, SectorSchema } from '../schemas/sector.schema';
 import {
   Facilitator,
@@ -37,9 +45,21 @@ import {
   CoordinatorSchema,
 } from '../schemas/coordinator.schema';
 import { Assessor, AssessorSchema } from '../schemas/assessor.schema';
+import {
+  PrimaryDataForm,
+  PrimaryDataFormSchema,
+} from '../schemas/primary-data-form.schema';
+import {
+  MasterPrimaryDataChecklist,
+  MasterPrimaryDataChecklistSchema,
+} from '../schemas/master-primary-data-checklist.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { MailModule } from '../../mail/mail.module';
 
 @Module({
   imports: [
+    NotificationsModule,
+    MailModule,
     MongooseModule.forFeature([
       { name: CompanyProject.name, schema: CompanyProjectSchema },
       { name: Company.name, schema: CompanySchema },
@@ -48,10 +68,14 @@ import { Assessor, AssessorSchema } from '../schemas/assessor.schema';
       { name: CompanyAssessor.name, schema: CompanyAssessorSchema },
       { name: CompanyActivity.name, schema: CompanyActivitySchema },
       { name: CompanyWorkOrder.name, schema: CompanyWorkOrderSchema },
+      { name: CompanyResourceDocument.name, schema: CompanyResourceDocumentSchema },
+      { name: CompanyInvoice.name, schema: CompanyInvoiceSchema },
       { name: Sector.name, schema: SectorSchema },
       { name: Facilitator.name, schema: FacilitatorSchema },
       { name: Coordinator.name, schema: CoordinatorSchema },
       { name: Assessor.name, schema: AssessorSchema },
+      { name: PrimaryDataForm.name, schema: PrimaryDataFormSchema },
+      { name: MasterPrimaryDataChecklist.name, schema: MasterPrimaryDataChecklistSchema },
     ]),
   ],
   controllers: [CompanyProjectsController],

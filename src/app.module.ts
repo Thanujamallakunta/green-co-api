@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CompanyAuthModule } from './company/company-auth/company-auth.module';
 import { CompanyProjectsModule } from './company/company-projects/company-projects.module';
+import { NotificationsModule } from './company/notifications/notifications.module';
 import { FacilitatorsModule } from './company/facilitators/facilitators.module';
 import { RegistrationMastersModule } from './company/registration-masters/registration-masters.module';
 import { MailModule } from './mail/mail.module';
@@ -26,6 +27,7 @@ import { AppController } from './app.controller';
     }),
     CompanyAuthModule,
     CompanyProjectsModule,
+    NotificationsModule,
     FacilitatorsModule,
     RegistrationMastersModule,
     MailModule,

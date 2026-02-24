@@ -22,10 +22,25 @@ export class CompanyProject {
   certificate_document_filename?: string;
 
   @Prop()
+  certificate_upload_date?: Date;
+
+  @Prop()
+  certificate_expiry_date?: Date;
+
+  @Prop()
+  sustenance_date?: Date;
+
+  @Prop()
+  sustenance_mail_sent?: number; // 0/1 - for reminder cron
+
+  @Prop()
   feedback_document_url?: string;
 
   @Prop()
   feedback_document_filename?: string;
+
+  @Prop()
+  feedback_upload_date?: Date;
 
   // Score band metadata
   @Prop({ default: 0 }) // 0 = not available, 1 = available
@@ -33,6 +48,12 @@ export class CompanyProject {
 
   @Prop()
   percentage_score?: number;
+
+  @Prop()
+  total_score?: number;
+
+  @Prop()
+  max_points?: number;
 
   @Prop({ type: Array, default: [] })
   criteria_projectscore?: any[];
@@ -51,6 +72,24 @@ export class CompanyProject {
   proposal_document?: string;
 
   @Prop()
+  launch_training_document?: string;
+
+  @Prop()
+  launch_training_report_date?: Date;
+
+  @Prop()
+  hand_holding_document?: string;
+
+  @Prop()
+  hand_holding_document2?: string;
+
+  @Prop()
+  hand_holding_document3?: string;
+
+  @Prop({ default: 0 })
+  profile_update?: number; // 0 or 1 - indicates if registration form is submitted
+
+  @Prop()
   project_id?: string; // Project code/identifier
 
   // Raw registration info from the big Registration Info form
@@ -60,3 +99,5 @@ export class CompanyProject {
 }
 
 export const CompanyProjectSchema = SchemaFactory.createForClass(CompanyProject);
+CompanyProjectSchema.index({ company_id: 1 });
+CompanyProjectSchema.index({ _id: 1, company_id: 1 });

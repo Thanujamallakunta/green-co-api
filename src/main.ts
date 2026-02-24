@@ -4,10 +4,47 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bodyParser: true,
+    bodyParser: false, // Disable automatic body parsing to allow Multer to handle multipart/form-data
+  });
+
+  // Manually add JSON and URL-encoded body parsers, but skip multipart/form-data
+  // This allows Multer to handle multipart/form-data without interference
+  app.use((req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+      // Skip body parsing for multipart requests - let Multer handle it
+      return next();
+    }
+    // For other content types, use JSON parser
+    return express.json()(req, res, next);
+  });
+  
+  app.use((req, res, next) => {
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('multipart/form-data')) {
+      // Skip body parsing for multipart requests - let Multer handle it
+      return next();
+    }
+    // For URL-encoded requests, use URL-encoded parser
+    return express.urlencoded({ extended: true })(req, res, next);
+  });
+
+  // Response time logging (skip static and health)
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const url = req.originalUrl || req.url;
+    res.on('finish', () => {
+      const ms = Date.now() - start;
+      const slow = ms > 1000;
+      if (slow || process.env.NODE_ENV !== 'production') {
+        console.log(`[API] ${req.method} ${url} ${res.statusCode} ${ms}ms${slow ? ' (slow)' : ''}`);
+      }
+    });
+    next();
   });
 
   // Serve static files from uploads directory
@@ -15,31 +52,36 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  // Enable CORS
-  const allowedOrigins = process.env.FRONTEND_URL
+  // CORS: in development allow all origins to avoid "network error"; in production use allowlist
+  const isProduction = process.env.NODE_ENV === 'production';
+  const envOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
-    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', "https://cursor-greenco-mern.vercel.app"];
+    : [];
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3002',
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:3002',
+    'https://cursor-greenco-mern.vercel.app',
+  ];
+  const allowedOrigins = envOrigins.length > 0 ? envOrigins : defaultOrigins;
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // For development, allow localhost on any port
-        if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      }
+      // In development: allow every origin to rule out CORS as cause of network error
+      if (!isProduction) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) return callback(null, true);
+      if (origin.startsWith('http://127.0.0.1:') || origin.startsWith('https://127.0.0.1:')) return callback(null, true);
+      callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    optionsSuccessStatus: 200,
   });
 
   // Global exception filter to format all errors consistently
@@ -63,8 +105,8 @@ async function bootstrap() {
   server.keepAliveTimeout = 30000;
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`Application is running on: http://localhost:${port} (and on 0.0.0.0 for network access)`);
 }
 bootstrap();
 

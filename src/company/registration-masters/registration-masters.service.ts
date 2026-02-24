@@ -28,7 +28,7 @@ export class RegistrationMastersService {
     data: {
       industries: Array<{ id: string; name: string }>;
       entities: Array<{ id: string; name: string }>;
-      sectors: Array<{ id: string; name: string }>;
+      sectors: Array<{ id: string; name: string; group_name?: string }>;
       states: Array<{ id: string; name: string; code?: string }>;
       facilitators: Array<{ id: string; name: string }>;
     };
@@ -62,11 +62,11 @@ export class RegistrationMastersService {
             .sort({ name: 1 })
             .select('_id name')
             .lean(),
-          // Sectors: no status field, return all
+          // Sectors: no status field, return all (include group_name for GROUP / SECTOR UI)
           this.sectorModel
             .find({})
-            .sort({ name: 1 })
-            .select('_id name')
+            .sort({ group_name: 1, name: 1 })
+            .select('_id name group_name')
             .lean(),
           // States: same as industries/entities
           this.stateModel
@@ -134,6 +134,7 @@ export class RegistrationMastersService {
           sectors: sectors.map((s: any) => ({
             id: s._id.toString(),
             name: s.name,
+            group_name: s.group_name || '',
           })),
           states: states.map((s: any) => ({
             id: s._id.toString(),
@@ -161,6 +162,59 @@ export class RegistrationMastersService {
         },
       };
     }
+  }
+
+  /**
+   * Get distinct groups and all sectors (for Primary Data / checklist page: GROUP and SECTOR dropdowns).
+   */
+  async getGroupsAndSectors(): Promise<{
+    status: 'success';
+    message: string;
+    data: { groups: string[]; sectors: Array<{ id: string; name: string; group_name: string }> };
+  }> {
+    const sectors = await this.sectorModel
+      .find({})
+      .sort({ group_name: 1, name: 1 })
+      .select('_id name group_name')
+      .lean();
+    const sectorList = (sectors as any[]).map((s) => ({
+      id: s._id.toString(),
+      name: s.name,
+      group_name: s.group_name || '',
+    }));
+    const groups = [...new Set(sectorList.map((s) => s.group_name).filter(Boolean))].sort();
+    return {
+      status: 'success',
+      message: 'Groups and sectors',
+      data: { groups, sectors: sectorList },
+    };
+  }
+
+  /**
+   * Get assessment submittal category tabs (GSC, IE, PSL, MS, EM, CBM, WTM, MRM, GBE).
+   * Frontend uses this to render tabs and filter assessment_submittals by description/criterion.
+   */
+  async getAssessmentCategories(): Promise<{
+    status: 'success';
+    message: string;
+    data: { categories: Array<{ code: string; label: string; order: number }> };
+  }> {
+    const categories = [
+      { code: 'GSC', label: 'Green Supply Chain', order: 1 },
+      { code: 'IE', label: 'Industrial Ecology', order: 2 },
+      { code: 'PSL', label: 'Product Stewardship / Life Cycle', order: 3 },
+      { code: 'MS', label: 'Material Stewardship', order: 4 },
+      { code: 'EM', label: 'Energy Management', order: 5 },
+      { code: 'CBM', label: 'Circular Business Model', order: 6 },
+      { code: 'WTM', label: 'Water & Wastewater Management', order: 7 },
+      { code: 'MRM', label: 'Material Resource Management', order: 8 },
+      { code: 'GBE', label: 'Green Building / Infrastructure', order: 9 },
+    ];
+    return {
+      status: 'success',
+      message: 'Assessment submittal categories',
+      data: { categories },
+    };
   }
 }
 

@@ -1,0 +1,5 @@
+[
+  { "id": "PASTE_SUBMITTAL_ID_1", "document_status": 1, "document_remarks": "Approved" },
+  { "id": "PASTE_SUBMITTAL_ID_2", "document_status": 0, "document_remarks": "" },
+  { "id": "PASTE_SUBMITTAL_ID_3", "document_status": 3, "document_remarks": "Under review" }
+]

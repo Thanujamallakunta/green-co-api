@@ -25,6 +25,7 @@ import {
 } from '../schemas/company-activity.schema';
 import { Facilitator, FacilitatorDocument } from '../schemas/facilitator.schema';
 import { MailService } from '../../mail/mail.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { passwordGeneration } from '../../helpers/password.helper';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -45,6 +46,7 @@ export class CompanyAuthService {
     private facilitatorModel: Model<FacilitatorDocument>,
     private jwtService: JwtService,
     private mailService: MailService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -147,6 +149,26 @@ export class CompanyAuthService {
       });
       await facilitator.save();
     }
+
+    // In-app: notify Admin (New Company Registered)
+    this.notificationsService
+      .create(
+        'New Company Registered',
+        `Company ${savedCompany.name} Registered`,
+        'A',
+        null,
+      )
+      .catch((err) => console.error('Notification create failed:', err));
+
+    // In-app: notify Company (credentials / next steps)
+    this.notificationsService
+      .create(
+        'Registration successful',
+        'You have been registered. Check your email for login credentials and next steps.',
+        'C',
+        savedCompany._id.toString(),
+      )
+      .catch((err) => console.error('Notification to company failed:', err));
 
     // Send registration email in background (non-blocking)
     this.mailService

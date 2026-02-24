@@ -16,4 +16,7 @@ export class CompanyCoordinator {
 }
 
 export const CompanyCoordinatorSchema = SchemaFactory.createForClass(CompanyCoordinator);
+CompanyCoordinatorSchema.index({ company_id: 1, project_id: 1 });
+
+
 

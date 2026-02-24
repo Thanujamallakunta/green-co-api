@@ -1,0 +1,18 @@
+[
+  {
+    "project_id": "REPLACE_WITH_YOUR_PROJECT_ID",
+    "payment_for": "per_inv",
+    "payable_amount": 10000,
+    "tax_amount": 1800,
+    "total_amount": 11800,
+    "invoice_document_filename": "Proforma_Invoice.pdf"
+  },
+  {
+    "project_id": "REPLACE_WITH_YOUR_PROJECT_ID",
+    "payment_for": "inv",
+    "payable_amount": 15000,
+    "tax_amount": 2700,
+    "total_amount": 17700,
+    "invoice_document_filename": "Tax_Invoice.pdf"
+  }
+]

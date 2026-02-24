@@ -1,0 +1,29 @@
+{
+  "projectId": "6994af7e1c64cedc200bd8ca",
+  "final_submit": false,
+  "rows": [
+    {
+      "info_type": "gi",
+      "parameter": "General Information – Parameter 1",
+      "reference_unit": "",
+      "details": "Sample detail",
+      "fy1": 100,
+      "fy2": 110,
+      "fy3": 120,
+      "fy4": 130,
+      "fy5": 140,
+      "additional_details": ""
+    },
+    {
+      "info_type": "ee",
+      "parameter": "Energy Efficiency – Parameter 1",
+      "reference_unit": "kWh",
+      "details": "Energy data",
+      "fy1": 1000,
+      "fy2": 950,
+      "fy3": 900,
+      "fy4": 850,
+      "fy5": 800
+    }
+  ]
+}

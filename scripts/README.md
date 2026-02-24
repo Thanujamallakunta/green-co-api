@@ -1,145 +1,98 @@
-# Database Update Scripts Guide
+# MongoDB Upload Scripts
 
-This folder contains scripts to update certificate data in MongoDB directly.
+## Quick Start
 
-## 📋 Prerequisites
+### Option 1: Use HTML Upload Page (Easiest) 🌐
 
-1. **Node.js** installed on your machine
-2. **MongoDB connection string** in your `.env` file:
+1. **Open the HTML file in your browser:**
    ```
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
-   ```
-
-## 🚀 Quick Start
-
-### Step 1: Install MongoDB Driver (if not already installed)
-
-```bash
-npm install mongodb dotenv
-```
-
-### Step 2: List All Projects (to find your project ID)
-
-```bash
-node scripts/list-projects.js
-```
-
-This will show you all projects with their IDs. Copy the project ID you want to update.
-
-### Step 3: Update Certificate Data
-
-1. Open `scripts/update-certificate-data.js`
-2. Update these values at the top of the file:
-   ```javascript
-   const PROJECT_ID = '6994af7e1c64cedc200bd8ca'; // Your project ID
-   const CERTIFICATE_DOCUMENT_URL = 'uploads/certificates/6994af7e1c64cedc200bd8ca/certificate.pdf';
-   const FEEDBACK_DOCUMENT_URL = 'uploads/feedback/6994af7e1c64cedc200bd8ca/feedback.pdf';
-   const SCORE_BAND_STATUS = 1; // 1 = available, 0 = not available
-   const PERCENTAGE_SCORE = 76.5; // Optional
+   scripts/upload-proposal-simple.html
    ```
 
-3. Run the script:
+2. **Get your JWT Token:**
+   - Open your frontend app
+   - Open browser console (F12)
+   - Run: `localStorage.getItem('greenco_token')`
+   - Copy the token
+
+3. **Get your Project ID:**
+   - From browser console: `localStorage.getItem('greenco_project_id')`
+   - Or from Quickview API response
+
+4. **Fill the form and upload!**
+
+---
+
+### Option 2: Use Node.js Script 📜
+
+1. **Install MongoDB driver:**
    ```bash
-   node scripts/update-certificate-data.js
+   npm install mongodb
    ```
 
-## 📝 Alternative Methods
+2. **Set your MongoDB connection string:**
+   ```bash
+   # Windows PowerShell
+   $env:MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/greenco_db"
+   
+   # Linux/Mac
+   export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/greenco_db"
+   ```
 
-### Method 1: MongoDB Compass (GUI)
+3. **Run the script:**
+   ```bash
+   node scripts/upload-proposal-document.js <projectId> <filePath>
+   ```
 
-1. Download [MongoDB Compass](https://www.mongodb.com/products/compass)
-2. Connect using your `MONGODB_URI`
-3. Navigate to `companyprojects` collection
-4. Find your project document
-5. Edit the fields:
-   - `certificate_document_url`
-   - `feedback_document_url`
-   - `score_band_status`
-   - `percentage_score` (optional)
-   - `score_band_pdf_path` (optional)
+   **Example:**
+   ```bash
+   node scripts/upload-proposal-document.js 6994af7e1c64cedc200bd8ca ./proposal.pdf
+   ```
 
-### Method 2: MongoDB Shell (mongosh)
+---
 
-```bash
-# Connect to MongoDB
-mongosh "your-mongodb-connection-string"
+### Option 3: Direct MongoDB Update 🗄️
 
-# Switch to your database
-use your-database-name
+See `MONGODB_DIRECT_UPLOAD_GUIDE.md` for detailed MongoDB commands.
 
-# Update the project
-db.companyprojects.updateOne(
-  { _id: ObjectId("6994af7e1c64cedc200bd8ca") },
-  {
-    $set: {
-      certificate_document_url: "uploads/certificates/6994af7e1c64cedc200bd8ca/certificate.pdf",
-      feedback_document_url: "uploads/feedback/6994af7e1c64cedc200bd8ca/feedback.pdf",
-      score_band_status: 1,
-      percentage_score: 76.5
-    }
-  }
-)
-```
+---
 
-### Method 3: MongoDB Atlas Web Interface
+## Files
 
-1. Go to [MongoDB Atlas](https://cloud.mongodb.com)
-2. Navigate to your cluster → Browse Collections
-3. Find `companyprojects` collection
-4. Click on your project document
-5. Click "Edit Document"
-6. Update the fields and save
+- `upload-proposal-document.js` - Node.js script for uploading proposal documents
+- `upload-proposal-simple.html` - Simple HTML page for uploading via API
+- `MONGODB_DIRECT_UPLOAD_GUIDE.md` - Complete guide for all methods
 
-## 🔍 Finding Your Project ID
+---
 
-From your frontend logs, you already have:
-```
-Project ID: 6994af7e1c64cedc200bd8ca
-```
+## What Gets Updated
 
-Or run the list script:
-```bash
-node scripts/list-projects.js
-```
+When you upload a proposal document:
 
-## ✅ Verification
+1. ✅ File copied to `uploads/proposals/{projectId}/`
+2. ✅ `companyprojects.proposal_document` field updated
+3. ✅ Milestone 3 logged: "CII Uploaded Proposal Document"
+4. ✅ `next_activities_id` updated to 4
+5. ✅ Company `reg_id` generated if missing
+6. ✅ Notification created
 
-After updating, test the API:
+---
 
-```bash
-curl -X GET "https://green-co-api.onrender.com/api/company/projects/6994af7e1c64cedc200bd8ca/certificate" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
+## Troubleshooting
 
-You should see:
-```json
-{
-  "status": "success",
-  "message": "Certificate data loaded",
-  "data": {
-    "profile": {
-      "certificate_document": "uploads/certificates/...",
-      "feedback_document": "uploads/feedback/...",
-      "score_band_status": 1
-    }
-  }
-}
-```
+### Script can't connect to MongoDB
+- Check your `MONGODB_URI` environment variable
+- Make sure your IP is whitelisted in MongoDB Atlas
+- Verify your connection string includes the database name
 
-## 🆘 Troubleshooting
+### File not found error
+- Use absolute path: `C:\path\to\file.pdf`
+- Or relative path from project root: `./proposal.pdf`
 
-**Error: Cannot find module 'mongodb'**
-```bash
-npm install mongodb dotenv
-```
+### Permission denied
+- Make sure `uploads/proposals/` directory is writable
+- On Windows, run as administrator if needed
 
-**Error: Project not found**
-- Check the PROJECT_ID is correct
-- Run `list-projects.js` to see all available project IDs
-- Make sure you're using the correct database
+---
 
-**Error: Connection failed**
-- Check your `MONGODB_URI` in `.env` file
-- Make sure your IP is whitelisted in MongoDB Atlas (if using Atlas)
-- Check your network connection
-
+**Choose the method that works best for you!** ✅

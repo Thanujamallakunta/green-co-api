@@ -22,6 +22,24 @@ export class RegistrationMastersController {
     });
     return result;
   }
+
+  /**
+   * GET /api/company/groups-sectors
+   * Returns distinct groups and all sectors (with group_name) for GROUP / SECTOR UI (e.g. Primary Data checklist page).
+   */
+  @Get('groups-sectors')
+  async getGroupsAndSectors() {
+    return this.registrationMastersService.getGroupsAndSectors();
+  }
+
+  /**
+   * GET /api/company/assessment-categories
+   * Returns category tabs for Assessment Submittals (GSC, IE, PSL, MS, EM, CBM, WTM, MRM, GBE).
+   */
+  @Get('assessment-categories')
+  async getAssessmentCategories() {
+    return this.registrationMastersService.getAssessmentCategories();
+  }
 }
 
 

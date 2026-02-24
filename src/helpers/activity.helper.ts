@@ -29,3 +29,5 @@ export async function notificationLog(
   console.log(`Notification: Company ${companyId} - ${notification}`, details);
 }
 
+
+

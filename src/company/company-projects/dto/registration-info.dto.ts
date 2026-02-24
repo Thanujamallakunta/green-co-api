@@ -132,6 +132,15 @@ export class RegistrationInfoDto {
   @IsOptional()
   @IsString()
   contact_person_mobile?: string;
+
+  // File fields (optional - these come from FormData, but may be sent as empty objects)
+  // These are handled separately in the controller via @UploadedFiles()
+  // No validation decorators - just accept and ignore
+  company_brief_profile?: any;
+
+  turnover_document?: any;
+
+  brief_profile?: any; // Alternative field name for company_brief_profile
 }
 
 

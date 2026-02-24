@@ -18,8 +18,13 @@ export class CompanyWorkOrder {
   wo_status?: number;
 
   @Prop()
+  wo_remarks?: string; // Remarks/reason if work order is rejected
+
+  @Prop()
   wo_doc_status_updated_at?: Date;
 }
 
 export const CompanyWorkOrderSchema = SchemaFactory.createForClass(CompanyWorkOrder);
+CompanyWorkOrderSchema.index({ company_id: 1, project_id: 1 });
+CompanyWorkOrderSchema.index({ company_id: 1, project_id: 1, createdAt: -1 });
 

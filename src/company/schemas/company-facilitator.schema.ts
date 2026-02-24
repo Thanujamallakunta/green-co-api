@@ -13,7 +13,14 @@ export class CompanyFacilitator {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
   facilitator_id: MongooseSchema.Types.ObjectId;
+
+  @Prop({ default: 0 }) // 1 = Contract signed, 0 = Not signed
+  contract_doc_status?: number;
+
+  @Prop()
+  contract_fee?: number; // Contract fee amount
 }
 
 export const CompanyFacilitatorSchema = SchemaFactory.createForClass(CompanyFacilitator);
+CompanyFacilitatorSchema.index({ company_id: 1, project_id: 1 });
 

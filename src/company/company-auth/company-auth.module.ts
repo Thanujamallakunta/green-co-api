@@ -21,6 +21,7 @@ import {
 } from '../schemas/company-activity.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { MailModule } from '../../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { MailModule } from '../../mail/mail.module';
       { name: CompanyActivity.name, schema: CompanyActivitySchema },
     ]),
     MailModule,
+    NotificationsModule,
   ],
   controllers: [CompanyAuthController],
   providers: [CompanyAuthService, JwtStrategy],

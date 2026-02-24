@@ -16,3 +16,5 @@ export class Industry {
 export const IndustrySchema = SchemaFactory.createForClass(Industry);
 
 
+
+

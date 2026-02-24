@@ -3,7 +3,7 @@ import { IsBoolean, IsInt, IsNotEmpty, IsOptional, Max, Min } from 'class-valida
 export class CompleteMilestoneDto {
   @IsInt()
   @Min(1)
-  @Max(8)
+  @Max(24) // Updated to support all 24 milestones
   milestone_flow: number;
 
   @IsNotEmpty()
