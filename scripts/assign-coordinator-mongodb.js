@@ -40,6 +40,7 @@ async function assignCoordinator() {
     }
 
     const companyId = project.company_id;
+    const now = new Date();
 
     // Verify coordinator exists
     const coordinator = await db.collection('coordinators').findOne({
@@ -68,8 +69,37 @@ async function assignCoordinator() {
       company_id: companyId,
       project_id: new ObjectId(projectId),
       coordinator_id: new ObjectId(coordinatorId),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Update project next_activities_id to 8 (CII uploaded the PI/Tax Invoice)
+    await db.collection('companyprojects').updateOne(
+      { _id: new ObjectId(projectId) },
+      { $set: { next_activities_id: 8, updatedAt: now } },
+    );
+
+    // Log activity (Milestone 7: Assign Project Co‑Ordinator)
+    await db.collection('companyactivities').insertOne({
+      company_id: companyId,
+      project_id: new ObjectId(projectId),
+      description: 'Assign Project Co‑Ordinator',
+      activity_type: 'cii',
+      milestone_flow: 7,
+      milestone_completed: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Create notification for company (C)
+    await db.collection('notifications').insertOne({
+      title: 'GreenCo Team has assigned a Coordinator for your Project',
+      content: `Coordinator ${coordinator.name} has been assigned for your project by GreenCo Team`,
+      notify_type: 'C',
+      user_id: companyId,
+      seen: false,
+      createdAt: now,
+      updatedAt: now,
     });
 
     console.log('✅ Coordinator assigned successfully!');
@@ -78,6 +108,7 @@ async function assignCoordinator() {
     console.log('   Company ID:', companyId.toString());
     console.log('   Coordinator:', coordinator.name);
     console.log('   Email:', coordinator.email);
+    console.log('   Activity: Milestone 7 logged, next_activities_id set to 8, notification created.');
 
   } catch (error) {
     console.error('❌ Error:', error.message);

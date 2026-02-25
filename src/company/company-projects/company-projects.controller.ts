@@ -46,6 +46,16 @@ export class CompanyProjectsController {
     private readonly companyProjectsService: CompanyProjectsService,
   ) {}
 
+  /**
+   * List all active coordinators (for admin dropdown).
+   * GET /api/company/projects/coordinators
+   */
+  @Get('coordinators')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  async listCoordinators(): Promise<any> {
+    return this.companyProjectsService.listCoordinators();
+  }
+
   // Test route to verify controller is working
   @Get('test')
   testRoute() {
@@ -762,6 +772,22 @@ export class CompanyProjectsController {
   }
 
   /**
+   * DEV/TEST: Create proposal/work order notification for this project.
+   * POST /api/company/projects/:projectId/info/create-notification
+   */
+  @Post(':projectId/info/create-notification')
+  @UseGuards(JwtAuthGuard, AccountStatusGuard)
+  async createProposalWorkOrderNotification(
+    @Request() req,
+    @Param('projectId') projectId: string,
+  ): Promise<any> {
+    return this.companyProjectsService.createProposalWorkOrderNotification(
+      req.user.userId,
+      projectId,
+    );
+  }
+
+  /**
    * Upload Resource Center Document
    * POST /api/company/projects/:projectId/resource-documents
    */
@@ -1079,6 +1105,7 @@ export class CompanyProjectsController {
   /**
    * Primary Data: store (update/insert rows, no final submit).
    * POST /api/company/projects/:projectId/primary-data/store
+   * Body: { doc: Array<PrimaryDataFormItem> | Record<data_id, PrimaryDataFormItem> }
    */
   @Post(':projectId/primary-data/store')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)

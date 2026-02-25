@@ -1,0 +1,661 @@
+{
+  "status": "success",
+  "message": "Primary data form retrieved",
+  "data": {
+    "project_id": "699dec95067fd70f4293d548",
+    "master_primary_data": [
+      {
+        "_id": "699a307c15fe1add4f1b8c14",
+        "info_type": "gi",
+        "checklist_name": "General Information",
+        "checklist_order": 10,
+        "parameter": "General Information – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307c15fe1add4f1b8c15",
+        "info_type": "ee",
+        "checklist_name": "Energy Efficiency",
+        "checklist_order": 20,
+        "parameter": "Energy Efficiency – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307c15fe1add4f1b8c16",
+        "info_type": "wc",
+        "checklist_name": "Water Conservation",
+        "checklist_order": 30,
+        "parameter": "Water Conservation – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307c15fe1add4f1b8c17",
+        "info_type": "ww",
+        "checklist_name": "Water & Wastewater",
+        "checklist_order": 35,
+        "parameter": "Water & Wastewater – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c18",
+        "info_type": "re",
+        "checklist_name": "Renewable Energy",
+        "checklist_order": 40,
+        "parameter": "Renewable Energy – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c19",
+        "info_type": "gge",
+        "checklist_name": "Greenhouse Gas Emissions",
+        "checklist_order": 50,
+        "parameter": "Greenhouse Gas Emissions – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1a",
+        "info_type": "wm",
+        "checklist_name": "Waste Management",
+        "checklist_order": 60,
+        "parameter": "Waste Management – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1b",
+        "info_type": "mcr",
+        "checklist_name": "Material Conservation, Recycling and Recyclables",
+        "checklist_order": 70,
+        "parameter": "Material Conservation, Recycling and Recyclables – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1c",
+        "info_type": "gsc",
+        "checklist_name": "Green Supply Chain",
+        "checklist_order": 80,
+        "parameter": "Green Supply Chain – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1d",
+        "info_type": "ps",
+        "checklist_name": "Product Stewardship",
+        "checklist_order": 90,
+        "parameter": "Product Stewardship – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1e",
+        "info_type": "gin",
+        "checklist_name": "Green Infrastructure",
+        "checklist_order": 100,
+        "parameter": "Green Infrastructure – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      },
+      {
+        "_id": "699a307d15fe1add4f1b8c1f",
+        "info_type": "tar",
+        "checklist_name": "Targets",
+        "checklist_order": 110,
+        "parameter": "Targets – Parameter 1",
+        "reference_unit": "",
+        "is_calculate": 0,
+        "is_active": 1
+      }
+    ],
+    "saved_by_info_type": {
+      "gi": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4a",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307c15fe1add4f1b8c14",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 11,
+          "fy2": 12,
+          "fy3": 13,
+          "fy4": 14,
+          "fy5": 15,
+          "info_type": "gi",
+          "lt_target": null,
+          "parameter": "General Information – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "ee": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4b",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307c15fe1add4f1b8c15",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 21,
+          "fy2": 22,
+          "fy3": 23,
+          "fy4": 24,
+          "fy5": 25,
+          "info_type": "ee",
+          "lt_target": null,
+          "parameter": "Energy Efficiency – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "wc": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4c",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307c15fe1add4f1b8c16",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 31,
+          "fy2": 32,
+          "fy3": 33,
+          "fy4": 34,
+          "fy5": 35,
+          "info_type": "wc",
+          "lt_target": null,
+          "parameter": "Water Conservation – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "ww": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4d",
+          "project_id": "699dec95067fd70f4293d548",
+          "data_id": "699a307c15fe1add4f1b8c17",
+          "company_id": "699dec95067fd70f4293d546",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 41,
+          "fy2": 42,
+          "fy3": 43,
+          "fy4": 44,
+          "fy5": 45,
+          "info_type": "ww",
+          "lt_target": null,
+          "parameter": "Water & Wastewater – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "re": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4e",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c18",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 51,
+          "fy2": 52,
+          "fy3": 53,
+          "fy4": 54,
+          "fy5": 55,
+          "info_type": "re",
+          "lt_target": null,
+          "parameter": "Renewable Energy – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "gge": [
+        {
+          "_id": "699e1c62b1405bcd32a92f4f",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c19",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 61,
+          "fy2": 62,
+          "fy3": 63,
+          "fy4": 64,
+          "fy5": 65,
+          "info_type": "gge",
+          "lt_target": null,
+          "parameter": "Greenhouse Gas Emissions – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "wm": [
+        {
+          "_id": "699e1c62b1405bcd32a92f50",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c1a",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 71,
+          "fy2": 72,
+          "fy3": 73,
+          "fy4": 74,
+          "fy5": 75,
+          "info_type": "wm",
+          "lt_target": null,
+          "parameter": "Waste Management – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "mcr": [
+        {
+          "_id": "699e1c62b1405bcd32a92f51",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c1b",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 81,
+          "fy2": 82,
+          "fy3": 83,
+          "fy4": 84,
+          "fy5": 85,
+          "info_type": "mcr",
+          "lt_target": null,
+          "parameter": "Material Conservation, Recycling and Recyclables – Parameter 1",
+          "reference_unit": "-",
+          "updatedAt": "2026-02-24T22:14:42.985Z"
+        }
+      ],
+      "gsc": [
+        {
+          "_id": "699e1c62b1405bcd32a92f52",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c1c",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 91,
+          "fy2": 92,
+          "fy3": 93,
+          "fy4": 94,
+          "fy5": 95,
+          "info_type": "gsc",
+          "lt_target": null,
+          "parameter": "Green Supply Chain – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "ps": [
+        {
+          "_id": "699e1c62b1405bcd32a92f53",
+          "project_id": "699dec95067fd70f4293d548",
+          "data_id": "699a307d15fe1add4f1b8c1d",
+          "company_id": "699dec95067fd70f4293d546",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 101,
+          "fy2": 102,
+          "fy3": 103,
+          "fy4": 104,
+          "fy5": 105,
+          "info_type": "ps",
+          "lt_target": null,
+          "parameter": "Product Stewardship – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "gin": [
+        {
+          "_id": "699e1c62b1405bcd32a92f54",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c1e",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 111,
+          "fy2": 112,
+          "fy3": 113,
+          "fy4": 114,
+          "fy5": 115,
+          "info_type": "gin",
+          "lt_target": null,
+          "parameter": "Green Infrastructure – Parameter 1",
+          "reference_unit": "-"
+        }
+      ],
+      "tar": [
+        {
+          "_id": "699e1c62b1405bcd32a92f55",
+          "company_id": "699dec95067fd70f4293d546",
+          "data_id": "699a307d15fe1add4f1b8c1f",
+          "project_id": "699dec95067fd70f4293d548",
+          "additional_details": null,
+          "details": "",
+          "extrapolated": null,
+          "fy1": 121,
+          "fy2": 122,
+          "fy3": 123,
+          "fy4": 124,
+          "fy5": 125,
+          "info_type": "tar",
+          "lt_target": null,
+          "parameter": "Targets – Parameter 1",
+          "reference_unit": "-"
+        }
+      ]
+    },
+    "saved_by_data_id": {
+      "699a307c15fe1add4f1b8c14": {
+        "_id": "699e1c62b1405bcd32a92f4a",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307c15fe1add4f1b8c14",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 11,
+        "fy2": 12,
+        "fy3": 13,
+        "fy4": 14,
+        "fy5": 15,
+        "info_type": "gi",
+        "lt_target": null,
+        "parameter": "General Information – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307c15fe1add4f1b8c15": {
+        "_id": "699e1c62b1405bcd32a92f4b",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307c15fe1add4f1b8c15",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 21,
+        "fy2": 22,
+        "fy3": 23,
+        "fy4": 24,
+        "fy5": 25,
+        "info_type": "ee",
+        "lt_target": null,
+        "parameter": "Energy Efficiency – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307c15fe1add4f1b8c16": {
+        "_id": "699e1c62b1405bcd32a92f4c",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307c15fe1add4f1b8c16",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 31,
+        "fy2": 32,
+        "fy3": 33,
+        "fy4": 34,
+        "fy5": 35,
+        "info_type": "wc",
+        "lt_target": null,
+        "parameter": "Water Conservation – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307c15fe1add4f1b8c17": {
+        "_id": "699e1c62b1405bcd32a92f4d",
+        "project_id": "699dec95067fd70f4293d548",
+        "data_id": "699a307c15fe1add4f1b8c17",
+        "company_id": "699dec95067fd70f4293d546",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 41,
+        "fy2": 42,
+        "fy3": 43,
+        "fy4": 44,
+        "fy5": 45,
+        "info_type": "ww",
+        "lt_target": null,
+        "parameter": "Water & Wastewater – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c18": {
+        "_id": "699e1c62b1405bcd32a92f4e",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c18",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 51,
+        "fy2": 52,
+        "fy3": 53,
+        "fy4": 54,
+        "fy5": 55,
+        "info_type": "re",
+        "lt_target": null,
+        "parameter": "Renewable Energy – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c19": {
+        "_id": "699e1c62b1405bcd32a92f4f",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c19",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 61,
+        "fy2": 62,
+        "fy3": 63,
+        "fy4": 64,
+        "fy5": 65,
+        "info_type": "gge",
+        "lt_target": null,
+        "parameter": "Greenhouse Gas Emissions – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c1a": {
+        "_id": "699e1c62b1405bcd32a92f50",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c1a",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 71,
+        "fy2": 72,
+        "fy3": 73,
+        "fy4": 74,
+        "fy5": 75,
+        "info_type": "wm",
+        "lt_target": null,
+        "parameter": "Waste Management – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c1b": {
+        "_id": "699e1c62b1405bcd32a92f51",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c1b",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 81,
+        "fy2": 82,
+        "fy3": 83,
+        "fy4": 84,
+        "fy5": 85,
+        "info_type": "mcr",
+        "lt_target": null,
+        "parameter": "Material Conservation, Recycling and Recyclables – Parameter 1",
+        "reference_unit": "-",
+        "updatedAt": "2026-02-24T22:14:42.985Z"
+      },
+      "699a307d15fe1add4f1b8c1c": {
+        "_id": "699e1c62b1405bcd32a92f52",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c1c",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 91,
+        "fy2": 92,
+        "fy3": 93,
+        "fy4": 94,
+        "fy5": 95,
+        "info_type": "gsc",
+        "lt_target": null,
+        "parameter": "Green Supply Chain – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c1d": {
+        "_id": "699e1c62b1405bcd32a92f53",
+        "project_id": "699dec95067fd70f4293d548",
+        "data_id": "699a307d15fe1add4f1b8c1d",
+        "company_id": "699dec95067fd70f4293d546",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 101,
+        "fy2": 102,
+        "fy3": 103,
+        "fy4": 104,
+        "fy5": 105,
+        "info_type": "ps",
+        "lt_target": null,
+        "parameter": "Product Stewardship – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c1e": {
+        "_id": "699e1c62b1405bcd32a92f54",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c1e",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 111,
+        "fy2": 112,
+        "fy3": 113,
+        "fy4": 114,
+        "fy5": 115,
+        "info_type": "gin",
+        "lt_target": null,
+        "parameter": "Green Infrastructure – Parameter 1",
+        "reference_unit": "-"
+      },
+      "699a307d15fe1add4f1b8c1f": {
+        "_id": "699e1c62b1405bcd32a92f55",
+        "company_id": "699dec95067fd70f4293d546",
+        "data_id": "699a307d15fe1add4f1b8c1f",
+        "project_id": "699dec95067fd70f4293d548",
+        "additional_details": null,
+        "details": "",
+        "extrapolated": null,
+        "fy1": 121,
+        "fy2": 122,
+        "fy3": 123,
+        "fy4": 124,
+        "fy5": 125,
+        "info_type": "tar",
+        "lt_target": null,
+        "parameter": "Targets – Parameter 1",
+        "reference_unit": "-"
+      }
+    },
+    "final_submit_docs": 0,
+    "primary_data_approval_count": 0,
+    "document_status_labels": {
+      "0": "Pending",
+      "1": "Accepted",
+      "2": "Not Accepted",
+      "3": "Under Review"
+    },
+    "sections": [
+      {
+        "info_type": "gi",
+        "tab_id": "gi",
+        "label": "General Information"
+      },
+      {
+        "info_type": "ee",
+        "tab_id": "ee",
+        "label": "Energy Efficiency"
+      },
+      {
+        "info_type": "wc",
+        "tab_id": "wc",
+        "label": "Water Conservation"
+      },
+      {
+        "info_type": "ww",
+        "tab_id": "ww",
+        "label": "Water & Wastewater"
+      },
+      {
+        "info_type": "re",
+        "tab_id": "re",
+        "label": "Renewable Energy"
+      },
+      {
+        "info_type": "gge",
+        "tab_id": "gge",
+        "label": "Greenhouse Gas Emissions"
+      },
+      {
+        "info_type": "wm",
+        "tab_id": "wm",
+        "label": "Waste Management"
+      },
+      {
+        "info_type": "mcr",
+        "tab_id": "mcr",
+        "label": "Material Conservation, Recycling and Recyclables"
+      },
+      {
+        "info_type": "gsc",
+        "tab_id": "gsc",
+        "label": "Green Supply Chain"
+      },
+      {
+        "info_type": "ps",
+        "tab_id": "ps",
+        "label": "Product Stewardship"
+      },
+      {
+        "info_type": "gin",
+        "tab_id": "gin",
+        "label": "Green Infrastructure"
+      },
+      {
+        "info_type": "tar",
+        "tab_id": "tar",
+        "label": "Targets"
+      }
+    ]
+  }
+}

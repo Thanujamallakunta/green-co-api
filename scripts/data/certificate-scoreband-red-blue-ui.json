@@ -1,0 +1,22 @@
+{
+  "projectId": "699dec95067fd70f4293d548",
+  "percentage_score": 75,
+  "total_score": 1350,
+  "max_points": 1800,
+  "score_band_status": 1,
+  "advance_step": true,
+  "send_notification": true,
+  "company_score_band_indices": [
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16],
+    [13, 14, 15, 16, 17, 18, 19]
+  ],
+  "max_bands_per_row": [20, 20, 20, 20, 20, 20, 20, 20, 20],
+  "high_bands_filled": 17
+}

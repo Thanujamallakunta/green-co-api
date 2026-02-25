@@ -12,11 +12,21 @@
 const { MongoClient, ObjectId } = require('mongodb');
 require('dotenv').config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/greenco_db';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/greenco';
 const projectId = process.argv[2];
 const workOrderId = process.argv[3];
 const woStatus = parseInt(process.argv[4]); // 1 = Approved, 2 = Rejected
 const woRemarks = process.argv[5] || null;
+
+function getDb(client) {
+  try {
+    const pathname = new URL(MONGODB_URI).pathname;
+    const dbName = (pathname && pathname.length > 1 ? pathname.replace(/^\//, '') : null) || 'greenco';
+    return client.db(dbName);
+  } catch (_) {
+    return client.db('greenco');
+  }
+}
 
 if (!projectId || !workOrderId || !woStatus) {
   console.error('❌ Usage: node scripts/approve-work-order.js <projectId> <workOrderId> <status> [remarks]');
@@ -34,8 +44,7 @@ async function approveWorkOrder() {
   try {
     client = new MongoClient(MONGODB_URI);
     await client.connect();
-    const dbName = new URL(MONGODB_URI).pathname.substring(1);
-    const db = client.db(dbName);
+    const db = getDb(client);
 
     console.log('🔍 Finding work order...');
     const workOrder = await db.collection('companyworkorders').findOne({

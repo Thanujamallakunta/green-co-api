@@ -48,6 +48,8 @@ async function run() {
   await client.connect();
   const db = getDb(client);
   const coll = db.collection('companyprojects');
+  const activitiesColl = db.collection('companyactivities');
+  const notificationsColl = db.collection('notifications');
 
   const project = await coll.findOne({ _id: new ObjectId(projectId) });
   if (!project) {
@@ -94,9 +96,56 @@ async function run() {
     process.exit(1);
   }
 
+  const now = new Date();
+
+  // Log activity 63 (Consultant Uploaded Site Visit Report) if not already present
+  const existingActivity = await activitiesColl.findOne({
+    company_id: project.company_id,
+    project_id: new ObjectId(projectId),
+    milestone_flow: 63,
+  });
+  if (!existingActivity) {
+    await activitiesColl.insertOne({
+      company_id: project.company_id,
+      project_id: new ObjectId(projectId),
+      description: 'Consultant Uploaded Site Visit Report',
+      activity_type: 'company',
+      milestone_flow: 63,
+      milestone_completed: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+    console.log('Activity logged: Consultant Uploaded Site Visit Report (milestone 63)');
+  } else {
+    console.log('Activity for milestone 63 already exists – not inserting duplicate.');
+  }
+
+  // Update next_activities_id to 64
+  await coll.updateOne(
+    { _id: new ObjectId(projectId) },
+    { $set: { next_activities_id: 64, updatedAt: now } },
+  );
+
+  // Create notification for company (C)
+  await notificationsColl.insertOne({
+    title: 'Site Visit Report uploaded',
+    content:
+      'The Site Visit Report (Launch & Training) has been uploaded for your project. You can view it in the portal.',
+    notify_type: 'C',
+    user_id: project.company_id,
+    seen: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+  console.log('Notification created for company about Site Visit Report upload.');
+
   console.log('Updated project', projectId);
   console.log('  launch_training_document:', pathToSet);
-  if (reportDateStr) console.log('  launch_training_report_date:', update.launch_training_report_date.toISOString().slice(0, 10));
+  if (reportDateStr)
+    console.log(
+      '  launch_training_report_date:',
+      update.launch_training_report_date.toISOString().slice(0, 10),
+    );
   await client.close();
 }
 

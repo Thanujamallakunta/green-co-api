@@ -1,0 +1,17 @@
+{
+  "projectId": "699dec95067fd70f4293d548",
+  "companyId": "699dec95067fd70f4293d546",
+  "advance_step": true,
+  "send_notification": true,
+  "items": [
+    { "document_title": "Green Supply Chain", "description": "GSC" },
+    { "document_title": "Industrial Ecology", "description": "IE" },
+    { "document_title": "Product Stewardship / Life Cycle", "description": "PSL" },
+    { "document_title": "Material Stewardship", "description": "MS" },
+    { "document_title": "Energy Management", "description": "EM" },
+    { "document_title": "Circular Business Model", "description": "CBM" },
+    { "document_title": "Water & Wastewater Management", "description": "WTM" },
+    { "document_title": "Material Resource Management", "description": "MRM" },
+    { "document_title": "Green Building / Infrastructure", "description": "GBE" }
+  ]
+}

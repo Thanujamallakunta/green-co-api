@@ -182,7 +182,7 @@ export class CompanyProjectsService {
     const newProject = new this.projectModel({
       company_id: companyId,
       process_type: (sourceProject as any).process_type || 'c',
-      next_activities_id: 3,
+      next_activities_id: 2, // Start recertification from step 2 = "Company Filled Registration Info"
       profile_update: 1,
       project_id: undefined,
       proposal_document: undefined,
@@ -210,12 +210,17 @@ export class CompanyProjectsService {
 
     const savedProject = await newProject.save();
 
+    await this.projectModel.updateOne(
+      { _id: projectId },
+      { $set: { recertification_project_id: savedProject._id } },
+    );
+
     await this.companyActivityModel.create({
       company_id: companyId,
       project_id: savedProject._id,
       description: 'Recertification project created from existing project',
       activity_type: 'cii',
-      milestone_flow: 2,
+      milestone_flow: 1, // Step 1 completed (Company Registered); next step = 2 (Registration Info)
       milestone_completed: true,
     });
 
@@ -474,10 +479,31 @@ export class CompanyProjectsService {
       turnover?: Express.Multer.File[];
     },
   ) {
-    const project = await this.projectModel.findOne({
-      _id: projectId,
-      company_id: companyId,
-    });
+    if (!companyId || !projectId) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Missing company or project context',
+      });
+    }
+    if (!Types.ObjectId.isValid(projectId)) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid project id',
+      });
+    }
+
+    let project: CompanyProjectDocument | null = null;
+    try {
+      project = await this.projectModel.findOne({
+        _id: new Types.ObjectId(projectId),
+        company_id: new Types.ObjectId(companyId),
+      });
+    } catch (e) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'Invalid project or company id',
+      });
+    }
 
     if (!project) {
       throw new NotFoundException({
@@ -563,18 +589,24 @@ export class CompanyProjectsService {
       registrationInfoKeys: Object.keys(project.registration_info),
       profile_update: project.profile_update,
     });
-    
-    await project.save();
+
+    try {
+      await project.save();
+    } catch (err: any) {
+      const message = err?.message || 'Failed to save registration info';
+      throw new BadRequestException({ status: 'error', message });
+    }
 
     // Log activity: Company Filled Registration Info (milestone 2) and set next step to 3
+    const companyObjId = new Types.ObjectId(companyId);
     const existingMilestone2 = await this.companyActivityModel.findOne({
-      company_id: companyId,
+      company_id: companyObjId,
       project_id: project._id,
       milestone_flow: 2,
     });
     if (!existingMilestone2) {
       await this.companyActivityModel.create({
-        company_id: companyId,
+        company_id: companyObjId,
         project_id: project._id,
         description: 'Registration form completed',
         activity_type: 'company',
@@ -613,15 +645,20 @@ export class CompanyProjectsService {
     });
 
     // Optionally mirror some fields onto Company for Quickview/profile
-    const company = await this.companyModel.findById(companyId);
-    if (company) {
-      if (dto.sector_id) {
-        company.mst_sector_id = dto.sector_id;
+    try {
+      const company = await this.companyModel.findById(companyId);
+      if (company) {
+        if (dto.sector_id) {
+          company.mst_sector_id = dto.sector_id;
+        }
+        if (dto.turnover) {
+          company.turnover = dto.turnover;
+        }
+        await company.save();
       }
-      if (dto.turnover) {
-        company.turnover = dto.turnover;
-      }
-      await company.save();
+    } catch (err: any) {
+      console.error('[Registration Info Service] Company mirror update failed:', err?.message || err);
+      // Non-fatal: registration info was already saved
     }
 
     // Build response with file URLs if files were uploaded
@@ -991,6 +1028,30 @@ export class CompanyProjectsService {
     // Base URL for document URLs
     const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001';
 
+    // Tab visibility: after Assessor Visit (14) → show Certificate; after Certificate (15+) → show Recertification.
+    // Don't return 15+ until certificate is uploaded (so Recertification stays hidden until certificate phase is done).
+    const rawNextId = typeof project.next_activities_id === 'number' ? project.next_activities_id : (project.next_activities_id ? parseInt(String(project.next_activities_id), 10) : 1);
+    const hasCertificate = !!(project as any).certificate_document_url;
+    const effectiveNextId = !hasCertificate && rawNextId >= 15 ? 14 : rawNextId;
+
+    // Step 24 display: if recertification started → "open new project"; if not → "Certificate created" / Completed
+    const recertificationNewProjectId = (project as any).recertification_project_id?.toString?.() ?? (project as any).recertification_project_id;
+    const isRecertifiedAndAtCloseOut = effectiveNextId === 24 && !!recertificationNewProjectId;
+    const isAtCloseOutNoRecertify = effectiveNextId === 24 && !recertificationNewProjectId;
+    const nextStepDisplayName = isRecertifiedAndAtCloseOut
+      ? 'Recertification started – open your new project'
+      : isAtCloseOutNoRecertify
+        ? 'Certificate created'
+        : nextActivityInfo.name;
+    const nextStepDisplayStatus = isRecertifiedAndAtCloseOut
+      ? 'Recertification'
+      : isAtCloseOutNoRecertify
+        ? 'Completed'
+        : nextActivityInfo.status;
+    const nextStepDisplayResponsibility = isAtCloseOutNoRecertify
+      ? 'CII'
+      : nextActivityInfo.responsibility;
+
     // Build profile object
     const profile = {
       id: project._id.toString(),
@@ -1018,11 +1079,11 @@ export class CompanyProjectsService {
           ? project.feedback_document_url
           : `${baseUrl}/api/company/projects/${projectId}/feedback-document`
         : null,
-      next_activities_id: typeof project.next_activities_id === 'number' ? project.next_activities_id : (project.next_activities_id ? parseInt(String(project.next_activities_id), 10) : 1), // Include next_activities_id for frontend (ensure it's always a number)
-      nextActivitiesId: typeof project.next_activities_id === 'number' ? project.next_activities_id : (project.next_activities_id ? parseInt(String(project.next_activities_id), 10) : 1), // Also include camelCase version for frontend compatibility
-      next_activity: nextActivityInfo.name,
-      next_activity_status: nextActivityInfo.status,
-      next_responsibility: nextActivityInfo.responsibility,
+      next_activities_id: effectiveNextId,
+      nextActivitiesId: effectiveNextId,
+      next_activity: nextStepDisplayName,
+      next_activity_status: nextStepDisplayStatus,
+      next_responsibility: nextStepDisplayResponsibility,
     };
 
     // Build current activity data (Latest Step Completed)
@@ -1096,11 +1157,36 @@ export class CompanyProjectsService {
           group_name: '',
         };
 
+    // Named step IDs for frontend tab visibility (Primary Data → Assessment → Site Visit → Certificate → Recertification)
+    const milestoneStepIds = {
+      primaryData: 12,    // CII Approved All Primary Data – show Primary Data tab when nextActivitiesId >= 12
+      assessment: 13,     // All Assessment Documents Uploaded – show Assessment tab when nextActivitiesId >= 13
+      siteVisit: 14,      // CII Approved All Assessment – show Assessor Visit tab when nextActivitiesId >= 14
+      award: 15,          // CII Assigned an Assessor – show View Certificate when nextActivitiesId >= 15
+      sustenance: 16,    // Preliminary Scoring – show Recertification when nextActivitiesId >= 16
+    };
+
+    const next_step = {
+      id: effectiveNextId,
+      name: nextStepDisplayName,
+      status: nextStepDisplayStatus,
+      responsibility: nextStepDisplayResponsibility,
+    };
+    const latest_step = {
+      id: latestCompletedMilestoneNumber || 0,
+      name: latestCompletedMilestoneName || currentActivityData.activity,
+      status: latestCompletedMilestoneNumber != null && latestCompletedMilestoneNumber > 0 ? 'Completed' : (currentActivityData.activity_status === 'Done' ? 'Done' : 'Pending'),
+      responsibility: currentActivityData.responsibility,
+    };
+
     return {
       status: 'success',
       message: 'Quickview data loaded successfully',
       data: {
         profile,
+        next_step,
+        latest_step,
+        ...(recertificationNewProjectId ? { recertification_new_project_id: recertificationNewProjectId } : {}),
         sector: sectorData,
         current_activity_data: currentActivityData,
         company_wo: companyWo,
@@ -1116,6 +1202,7 @@ export class CompanyProjectsService {
           acc[key] = milestoneSteps[parseInt(key)].name;
           return acc;
         }, {} as Record<string, string>),
+        milestoneStepIds,
         last_activity: lastActivityData,
         milestone_flow: {
           current_flow: currentFlow,
@@ -1194,37 +1281,43 @@ export class CompanyProjectsService {
     });
 
     // Create notification - send to correct recipient based on process_type
-    // Note: You'll need to implement notification model if not exists
-    // For CII process: notify company (type 'C')
-    // For Facilitator process: notify facilitator (type 'F')
-    const notifyType = project.process_type === 'c' ? 'C' : 'F';
-    let notifyUserId = companyId;
-    
+    // For CII process ('c'): notify company (type 'C')
+    // For Facilitator process ('f'): notify facilitator (type 'F'); if no facilitator assigned, notify company (type 'C') so they still see it
+    let notifyType: 'C' | 'F' = project.process_type === 'c' ? 'C' : 'F';
+    let notifyUserId: string = companyId;
+
     if (project.process_type === 'f') {
-      // Get facilitator ID for facilitator process
       const facilitator = await this.companyFacilitatorModel.findOne({
         company_id: companyId,
         project_id: projectId,
       });
       if (facilitator && facilitator.facilitator_id) {
         notifyUserId = facilitator.facilitator_id.toString();
+      } else {
+        // No facilitator yet: notify company so they see the proposal notification
+        notifyType = 'C';
+        notifyUserId = companyId;
       }
     }
 
-    console.log('[Proposal Document] Notification:', {
+    console.log('[Proposal Document] Notification target:', {
       notifyType,
       notifyUserId,
       processType: project.process_type,
     });
 
-    // TODO: Create notification entry if you have notifications collection
-    // await this.notificationModel.create({
-    //   title: 'GreenCo Team has uploaded the proposal document',
-    //   content: `Company ${company?.name || 'Unknown'} Proposal Document has been uploaded by GreenCo Team`,
-    //   notify_type: notifyType,
-    //   user_id: notifyUserId,
-    //   seen: 0,
-    // });
+    if (notifyUserId) {
+      this.notificationsService
+        .create(
+          'Proposal document uploaded',
+          `Proposal document has been uploaded for your project ${project.project_id || project._id.toString()}.`,
+          notifyType,
+          notifyUserId,
+        )
+        .catch((e) =>
+          console.error('[Proposal Document] Notification failed:', e?.message || e),
+        );
+    }
 
     // Update next_activities_id to 4 (Company Will Upload Work order)
     project.next_activities_id = 4;
@@ -1326,6 +1419,47 @@ export class CompanyProjectsService {
     });
 
     await resourceDoc.save();
+
+    if (documentType === 'assessment_submittal') {
+      this.notificationsService
+        .create(
+          'Assessment Submittal Uploaded',
+          `An assessment submittal has been uploaded: ${title || file.originalname}. GreenCo Team will review it.`,
+          'C',
+          companyId,
+        )
+        .catch((e) => console.error('Assessment submittal upload notification failed:', e));
+
+      // If all 9 category tabs now have at least one document, send "all complete" notification (once per project)
+      const ASSESSMENT_CATEGORY_CODES = ['GSC', 'IE', 'PSL', 'MS', 'EM', 'CBM', 'WTM', 'MRM', 'GBE'];
+      const projectAny = project as any;
+      if (!projectAny.assessment_submittals_complete_notified) {
+        const docs = await this.companyResourceDocumentModel
+          .find({
+            project_id: projectId,
+            document_type: 'assessment_submittal',
+            is_active: true,
+          })
+          .select('description')
+          .lean();
+        const categoriesPresent = new Set((docs as any[]).map((d) => (d.description || '').trim()).filter(Boolean));
+        const allPresent = ASSESSMENT_CATEGORY_CODES.every((code) => categoriesPresent.has(code));
+        if (allPresent) {
+          this.notificationsService
+            .create(
+              'All Assessment Submittals Uploaded',
+              'You have uploaded documents for all assessment categories (GSC, IE, PSL, MS, EM, CBM, WTM, MRM, GBE). GreenCo Team will review them.',
+              'C',
+              companyId,
+            )
+            .catch((e) => console.error('All assessment submittals complete notification failed:', e));
+          await this.projectModel.updateOne(
+            { _id: projectId, company_id: companyId },
+            { $set: { assessment_submittals_complete_notified: true } },
+          );
+        }
+      }
+    }
 
     console.log('[Resource Document] Uploaded successfully:', {
       projectId: projectId.toString(),
@@ -1506,6 +1640,95 @@ export class CompanyProjectsService {
       status: 'success',
       message: 'Documents retrieved successfully',
       data: response,
+    };
+  }
+
+  /**
+   * Create a proposal/work order notification for the company (used by dev/test button).
+   * Chooses message based on which documents exist.
+   */
+  async createProposalWorkOrderNotification(
+    companyId: string,
+    projectId: string,
+  ): Promise<{
+    status: 'success';
+    message: string;
+    data: { title: string; content: string };
+  }> {
+    const [project, workOrder] = await Promise.all([
+      this.projectModel.findOne({ _id: projectId, company_id: companyId }).lean(),
+      this.companyWorkOrderModel
+        .findOne({ company_id: companyId, project_id: projectId })
+        .sort({ createdAt: -1 })
+        .lean(),
+    ]);
+
+    if (!project) {
+      throw new NotFoundException({ status: 'error', message: 'Project not found' });
+    }
+
+    const hasProposal = !!(project as any).proposal_document;
+    const hasWorkOrder = !!(workOrder as any)?.wo_doc;
+
+    if (!hasProposal && !hasWorkOrder) {
+      throw new BadRequestException({
+        status: 'error',
+        message: 'No proposal or work order document found for this project.',
+      });
+    }
+
+    let title = '';
+    let content = '';
+
+    if (hasProposal && hasWorkOrder) {
+      title = 'Proposal and Work Order submitted';
+      content =
+        'Your proposal and work order documents have been submitted and will be reviewed by CII.';
+    } else if (hasProposal) {
+      title = 'Proposal document submitted';
+      content =
+        'Your proposal document has been submitted and will be reviewed by CII.';
+    } else {
+      title = 'Work order document submitted';
+      content =
+        'Your work order document has been submitted and will be reviewed by CII.';
+    }
+
+    await this.notificationsService.create(title, content, 'C', companyId);
+
+    return {
+      status: 'success',
+      message: 'Notification created',
+      data: { title, content },
+    };
+  }
+
+  /**
+   * List all active coordinators (for admin to choose and assign).
+   */
+  async listCoordinators(): Promise<{
+    status: 'success';
+    message: string;
+    data: { coordinators: Array<{ id: string; name: string; email: string }> };
+  }> {
+    const docs = await this.coordinatorModel
+      .find({
+        $or: [{ status: '1' }, { status: 1 }, { status: { $exists: false } }],
+      })
+      .sort({ name: 1 })
+      .select('_id name email')
+      .lean();
+
+    const coordinators = (docs as any[]).map((c) => ({
+      id: c._id.toString(),
+      name: c.name,
+      email: c.email,
+    }));
+
+    return {
+      status: 'success',
+      message: 'Coordinators loaded',
+      data: { coordinators },
     };
   }
 
@@ -1828,11 +2051,25 @@ export class CompanyProjectsService {
     invoice.invoice_document_filename = file.originalname;
     await invoice.save();
 
+    // LOG ACTIVITY 8: CII uploaded the PI/Tax Invoice
     await this.companyActivityModel.create({
       company_id: companyId,
       project_id: projectId,
       description: `${paymentFor === PAYMENT_FOR_PROFORMA ? 'Proforma Invoice (PI)' : 'Tax Invoice'} uploaded`,
+      activity_type: 'cii',
+      milestone_flow: 8,
+      milestone_completed: true,
     });
+
+    // Advance next_activities_id to 9 (Company Paid Proforma Invoice) if still at/before 8
+    const currentNext =
+      typeof (project as any).next_activities_id === 'number'
+        ? (project as any).next_activities_id
+        : 0;
+    if (currentNext < 9) {
+      (project as any).next_activities_id = 9;
+      await project.save();
+    }
 
     const company = await this.companyModel.findById(companyId).lean();
     const projectCode = (project as any).project_id || projectId;
@@ -1940,12 +2177,33 @@ export class CompanyProjectsService {
     invoice.approval_status = 0; // Pending approval when submitted
     await invoice.save();
 
+    const paymentDescription = `Payment submitted for invoice (${invoice.payment_for === PAYMENT_FOR_PROFORMA ? 'Proforma' : 'Tax Invoice'}): ${dto.payment_type}${dto.trans_id ? ` - ${dto.trans_id}` : ''}`;
+
     // Activity log
     await this.companyActivityModel.create({
       company_id: companyId,
       project_id: projectId,
-      description: `Payment submitted for invoice (${invoice.payment_for === PAYMENT_FOR_PROFORMA ? 'Proforma' : 'Tax Invoice'}): ${dto.payment_type}${dto.trans_id ? ` - ${dto.trans_id}` : ''}`,
+      description: paymentDescription,
+      activity_type: 'company',
+      // For Proforma payment, mark milestone 9 (Company Paid Proforma Invoice)
+      milestone_flow: invoice.payment_for === PAYMENT_FOR_PROFORMA ? 9 : undefined,
+      milestone_completed: invoice.payment_for === PAYMENT_FOR_PROFORMA ? true : undefined,
     });
+
+    // When company pays Proforma invoice, advance next_activities_id to 10 (CII Acknowledged Proforma Invoice)
+    if (invoice.payment_for === PAYMENT_FOR_PROFORMA) {
+      const project = await this.projectModel.findOne({ _id: projectId, company_id: companyId });
+      if (project) {
+        const currentNext =
+          typeof (project as any).next_activities_id === 'number'
+            ? (project as any).next_activities_id
+            : 0;
+        if (currentNext < 10) {
+          (project as any).next_activities_id = 10;
+          await project.save();
+        }
+      }
+    }
 
     return {
       status: 'success',
@@ -1991,17 +2249,42 @@ export class CompanyProjectsService {
     const labels = ['Pending', 'Approved', 'Rejected', 'Under Review'];
     const statusLabel = labels[approvalStatus] ?? 'Pending';
 
+    // When Proforma is approved, mark milestone 10 (CII Acknowledged Proforma Invoice) and move to next step
+    if (approvalStatus === 1 && invoice.payment_for === PAYMENT_FOR_PROFORMA) {
+      await this.companyActivityModel.create({
+        company_id: companyId,
+        project_id: projectId,
+        description: 'CII Acknowledged Proforma Invoice',
+        activity_type: 'cii',
+        milestone_flow: 10,
+        milestone_completed: true,
+      });
+
+      const currentNext =
+        typeof (project as any).next_activities_id === 'number'
+          ? (project as any).next_activities_id
+          : 0;
+      // Next after 10 is 11 (Company Uploaded All Primary Data)
+      if (currentNext < 11) {
+        (project as any).next_activities_id = 11;
+        await project.save();
+      }
+    }
+
     // When Approved (1) or Rejected (2), notify company and facilitator + email
     if (approvalStatus === 1 || approvalStatus === 2) {
-      const status = approvalStatus === 1 ? 'Approved' : 'DisApproved';
       const company = await this.companyModel.findById(companyId).lean();
+      const status = approvalStatus === 1 ? 'Approved' : 'DisApproved';
+      const isProforma = invoice.payment_for === PAYMENT_FOR_PROFORMA;
+      const companyName = company?.name || 'N/A';
+      const title = isProforma
+        ? `Proforma Invoice ${status}`
+        : `GreenCo Team has ${status} the payment from company`;
+      const content = isProforma
+        ? `Proforma Invoice has been ${status.toLowerCase()} for company ${companyName}. ${approvalStatus === 1 ? 'Next: Site Visit document upload, then Primary Data Form.' : ''}`
+        : `GreenCo Team has ${status} the payment from company ${companyName}`;
       this.notificationsService
-        .create(
-          `GreenCo Team has ${status} the payment from company`,
-          `GreenCo Team has ${status} the payment from company ${company?.name || 'N/A'}`,
-          'C',
-          companyId,
-        )
+        .create(title, content, 'C', companyId)
         .catch((e) => console.error('Payment status notification failed:', e));
       if (company?.email) {
         this.mailService.sendPaymentApprovalEmail(company.email, company.name || 'Company', status as 'Approved' | 'DisApproved').catch((e) => console.error('Payment approval email failed:', e));
@@ -2010,12 +2293,7 @@ export class CompanyProjectsService {
       if (cf && (cf as any).facilitator_id) {
         const fid = (cf as any).facilitator_id._id?.toString?.() || (cf as any).facilitator_id;
         this.notificationsService
-          .create(
-            `GreenCo Team has ${status} the payment from company`,
-            `GreenCo Team has ${status} the payment from company ${company?.name || 'N/A'}`,
-            'F',
-            fid,
-          )
+          .create(title, content, 'F', fid)
           .catch((e) => console.error('Payment status notification to facilitator failed:', e));
         if ((cf as any).facilitator_id.email) {
           this.mailService.sendPaymentApprovalEmail((cf as any).facilitator_id.email, (cf as any).facilitator_id.name || 'Facilitator', status as 'Approved' | 'DisApproved').catch((e) => console.error('Payment approval email to facilitator failed:', e));
@@ -2120,9 +2398,19 @@ export class CompanyProjectsService {
       next_activities_id: project.next_activities_id,
     });
 
-    // TODO: Send notifications if notification model exists
-    // Notify Admin
-    // Notify Coordinator (if exists)
+    // In-app notification: work order uploaded (to company so they see confirmation)
+    this.notificationsService
+      .create(
+        isReUpload ? 'Work order re-uploaded' : 'Work order submitted',
+        isReUpload
+          ? 'You have re-uploaded the work order document. It will be reviewed by CII.'
+          : 'You have submitted the work order document. It will be reviewed by CII.',
+        'C',
+        companyId,
+      )
+      .catch((e) =>
+        console.error('[Work Order Upload] Notification failed:', e?.message || e),
+      );
 
     return {
       status: 'success',
@@ -2142,7 +2430,7 @@ export class CompanyProjectsService {
   /**
    * Upload Launch And Training (Site Visit Report) – consultant/facilitator upload.
    * Saves to uploads/companyproject/launchAndTraining/{company_id}/, updates companies_projects,
-   * and logs activity 63 (Consultant Uploaded Site Visit Report) with next_activities_id 64.
+   * and logs activity 63 (Consultant Uploaded Site Visit Report).
    */
   async uploadLaunchAndTraining(
     companyId: string,
@@ -2185,9 +2473,6 @@ export class CompanyProjectsService {
       milestone_flow: 63,
       milestone_completed: true,
     });
-
-    (project as any).next_activities_id = 64;
-    await project.save();
 
     // In-app: notify Company (C)
     const company = await this.companyModel.findById(companyId).lean();
@@ -2291,10 +2576,15 @@ export class CompanyProjectsService {
         console.log('[Work Order Approval] Generated reg_id:', regId);
       }
 
-      // Update next_activities_id to 7 (Assign Project Co-Ordinator)
-      // Milestone 6 (CII to provide Project Code) is handled separately or can be skipped
-      project.next_activities_id = 7;
-      await project.save();
+      // Advance next_activities_id to 6 (Assignment completed → Launch & Training tab)
+      const currentNext =
+        typeof (project as any).next_activities_id === 'number'
+          ? (project as any).next_activities_id
+          : 0;
+      if (currentNext < 6) {
+        (project as any).next_activities_id = 6;
+        await project.save();
+      }
     }
 
     // LOG ACTIVITY 5: CII Approved/Rejected Work Order Document
@@ -2309,23 +2599,37 @@ export class CompanyProjectsService {
       milestone_completed: dto.wo_status === 1,
     });
 
-    // Get coordinator for notifications (if exists)
-    const coordinator = await this.companyCoordinatorModel
-      .findOne({
-        company_id: companyId,
-        project_id: projectId,
-      })
-      .sort({ createdAt: -1 });
+    // Notify the company that owns the project (user_id must be project's company_id, notify_type 'C')
+    const projectCompanyId = (project.company_id || workOrder.company_id)?.toString?.() || companyId;
+    if (dto.wo_status === 1 && projectCompanyId) {
+      this.notificationsService
+        .create(
+          'Work order approved',
+          `Your work order has been approved by CII for project ${project.project_id || projectId}. You can proceed to the next step.`,
+          'C',
+          projectCompanyId,
+        )
+        .catch((e) =>
+          console.error('[Work Order Approval] Notification failed:', e?.message || e),
+        );
+    } else if (dto.wo_status === 2 && projectCompanyId) {
+      this.notificationsService
+        .create(
+          'Work order rejected',
+          `Your work order was not accepted.${dto.wo_remarks ? ` Remarks: ${dto.wo_remarks}` : ''} You may re-upload from the Proposal/Work Order tab.`,
+          'C',
+          projectCompanyId,
+        )
+        .catch((e) =>
+          console.error('[Work Order Approval] Notification failed:', e?.message || e),
+        );
+    }
 
     console.log('[Work Order Approval] Status updated:', {
       projectId: projectId.toString(),
       wo_status: dto.wo_status,
       next_activities_id: project.next_activities_id,
     });
-
-    // TODO: Send notifications if notification model exists
-    // Notify Company
-    // Notify Coordinator (if exists)
 
     return {
       status: 'success',
@@ -2560,7 +2864,7 @@ export class CompanyProjectsService {
 
     console.log('[Assign Coordinator] Activity logged (Milestone 7)');
 
-    // In-app: notify Company (C) and Coordinator (CO) - company only for now
+    // In-app: notify Company (C)
     this.notificationsService
       .create(
         'GreenCo Team has assigned a Coordinator for your Project',
@@ -2569,6 +2873,16 @@ export class CompanyProjectsService {
         companyId,
       )
       .catch((err) => console.error('Notification to company failed:', err));
+
+    // In-app: notify Coordinator (CO) so they see assignment in their portal (if used)
+    this.notificationsService
+      .create(
+        'You have been assigned as Coordinator for a Project',
+        `You have been assigned as Coordinator for project ${project.project_id || project._id.toString()}.`,
+        'CO',
+        coordinator._id.toString(),
+      )
+      .catch((err) => console.error('Notification to coordinator failed:', err));
 
     return {
       status: 'success',
@@ -2805,6 +3119,13 @@ export class CompanyProjectsService {
       )
       .catch((err) => console.error('Email to assessor failed:', err));
 
+    // Advance to 14 (CII Approved All Assessment / Assessor phase done) so Certificate tab opens after Assessor Visit Details
+    const currentNext = (project as any).next_activities_id ?? 0;
+    if (currentNext < 14) {
+      (project as any).next_activities_id = 14;
+      await project.save();
+    }
+
     return {
       status: 'success',
       message: 'Assessor assigned successfully',
@@ -2877,14 +3198,17 @@ export class CompanyProjectsService {
       throw new NotFoundException({ status: 'error', message: 'Project not found' });
     }
 
+    const cId = new Types.ObjectId(companyId);
+    const pId = new Types.ObjectId(projectId);
     const [masterList, savedRows, sections] = await Promise.all([
       this.masterPrimaryDataChecklistModel.find({ is_active: 1 }).sort({ checklist_order: 1 }).lean(),
-      this.primaryDataFormModel.find({ company_id: companyId, project_id: projectId }).lean(),
+      this.primaryDataFormModel.find({ company_id: cId, project_id: pId }).lean(),
       this.getSectionsFromMaster(),
     ]);
 
     const infoTypesFromMaster = [...new Set((masterList as any[]).map((r) => r.info_type).filter(Boolean))];
     const byInfoType: Record<string, any[]> = {};
+    const savedByDataId: Record<string, any> = {};
     for (const t of infoTypesFromMaster) {
       byInfoType[t] = [];
     }
@@ -2892,10 +3216,46 @@ export class CompanyProjectsService {
       const t = row.info_type || 'gi';
       if (!byInfoType[t]) byInfoType[t] = [];
       byInfoType[t].push(row);
+      const dataIdStr = (row.data_id && row.data_id.toString) ? row.data_id.toString() : String(row.data_id);
+      if (dataIdStr) savedByDataId[dataIdStr] = row;
     }
 
     const finalSubmitCount = (savedRows as any[]).filter((r) => r.final_submit === 1).length;
     const approvalCount = (savedRows as any[]).filter((r) => r.document_status === PRIMARY_DATA_DOC_STATUS.ACCEPTED).length;
+
+    // Merged rows: for each master row, attach saved values so Reference Unit (and FY) come from saved when present.
+    // primary_data_rows is keyed by info_type (gi, ee, wc, ...) so the UI can use primary_data_rows[activeSection].
+    const mergedRowsFlat = (masterList as any[]).map((master) => {
+      const mid = master._id?.toString?.() ?? master._id;
+      const saved = mid ? savedByDataId[mid] : null;
+      const refUnit = saved?.reference_unit != null && String(saved.reference_unit).trim() !== ''
+        ? String(saved.reference_unit)
+        : (master.reference_unit != null && String(master.reference_unit).trim() !== '' ? String(master.reference_unit) : '-');
+      return {
+        ...master,
+        reference_unit: refUnit,
+        reference_unit_display: refUnit,
+        parameter: saved?.parameter ?? master.parameter,
+        details: saved?.details ?? master.details,
+        fy1: saved?.fy1 ?? master.fy1 ?? 0,
+        fy2: saved?.fy2 ?? master.fy2 ?? 0,
+        fy3: saved?.fy3 ?? master.fy3 ?? 0,
+        fy4: saved?.fy4 ?? master.fy4 ?? 0,
+        fy5: saved?.fy5 ?? master.fy5 ?? 0,
+        extrapolated: saved?.extrapolated ?? master.extrapolated,
+        lt_target: saved?.lt_target ?? master.lt_target,
+        additional_details: saved?.additional_details ?? master.additional_details,
+        document: saved?.document,
+        document_status: saved?.document_status,
+        final_submit: saved?.final_submit,
+      };
+    });
+    const primary_data_rows: Record<string, any[]> = {};
+    for (const row of mergedRowsFlat as any[]) {
+      const t = row.info_type || 'gi';
+      if (!primary_data_rows[t]) primary_data_rows[t] = [];
+      primary_data_rows[t].push(row);
+    }
 
     return {
       status: 'success',
@@ -2904,6 +3264,8 @@ export class CompanyProjectsService {
         project_id: projectId,
         master_primary_data: masterList,
         saved_by_info_type: byInfoType,
+        saved_by_data_id: savedByDataId,
+        primary_data_rows,
         final_submit_docs: finalSubmitCount,
         primary_data_approval_count: approvalCount,
         document_status_labels: this.getPrimaryDataDocStatusLabels(),
@@ -2961,8 +3323,9 @@ export class CompanyProjectsService {
 
   /**
    * Store Primary Data (field-by-field): update or insert from doc array. No final submit.
+   * Accepts doc as array or object keyed by data_id (same shape as /save payload).
    */
-  async storePrimaryData(companyId: string, projectId: string, doc: any[]) {
+  async storePrimaryData(companyId: string, projectId: string, doc: any[] | Record<string, any>) {
     const project = await this.projectModel.findOne({ _id: projectId, company_id: companyId });
     if (!project) {
       throw new NotFoundException({ status: 'error', message: 'Project not found' });
@@ -2972,7 +3335,28 @@ export class CompanyProjectsService {
     const cId = new mongoose.Types.ObjectId(companyId);
     const pId = new mongoose.Types.ObjectId(projectId);
 
-    for (const item of doc) {
+    const toNum = (v: unknown): number | undefined =>
+      v === '' || v == null ? undefined : (Number.isFinite(Number(v)) ? Number(v) : undefined);
+
+    const items: any[] = Array.isArray(doc)
+      ? doc
+      : Object.entries(doc || {}).map(([data_id, sectionRow]) => ({
+          data_id,
+          info_type: sectionRow?.info_type,
+          parameter: sectionRow?.parameter,
+          reference_unit: sectionRow?.reference_unit,
+          details: sectionRow?.details,
+          fy1: sectionRow?.fy1,
+          fy2: sectionRow?.fy2,
+          fy3: sectionRow?.fy3,
+          fy4: sectionRow?.fy4,
+          fy5: sectionRow?.fy5,
+          extrapolated: sectionRow?.extrapolated,
+          lt_target: sectionRow?.lt_target,
+          additional_details: sectionRow?.additional_details,
+        }));
+
+    for (const item of items) {
       const dataId = item.data_id ? new mongoose.Types.ObjectId(item.data_id) : undefined;
       if (!dataId) continue;
 
@@ -2981,13 +3365,13 @@ export class CompanyProjectsService {
         parameter: item.parameter,
         reference_unit: item.reference_unit,
         details: item.details,
-        fy1: item.fy1 ?? 0,
-        fy2: item.fy2 ?? 0,
-        fy3: item.fy3 ?? 0,
-        fy4: item.fy4 ?? 0,
-        fy5: item.fy5 ?? 0,
-        extrapolated: item.extrapolated,
-        lt_target: item.lt_target,
+        fy1: toNum(item.fy1) ?? 0,
+        fy2: toNum(item.fy2) ?? 0,
+        fy3: toNum(item.fy3) ?? 0,
+        fy4: toNum(item.fy4) ?? 0,
+        fy5: toNum(item.fy5) ?? 0,
+        extrapolated: toNum(item.extrapolated),
+        lt_target: toNum(item.lt_target),
         additional_details: item.additional_details,
       };
 
@@ -3002,7 +3386,7 @@ export class CompanyProjectsService {
   }
 
   /**
-   * Submit Primary Data: set final_submit = 1 for all project rows, then activity + notifications.
+   * Submit Primary Data: set final_submit = 1 for all project rows, advance next_activities_id to 11 (Company Uploaded All Primary Data), then activity + notifications.
    */
   async submitPrimaryData(companyId: string, projectId: string, doc: any[]) {
     await this.storePrimaryData(companyId, projectId, doc);
@@ -3014,6 +3398,15 @@ export class CompanyProjectsService {
       { $set: { final_submit: 1 } },
     );
 
+    const project = await this.projectModel.findOne({ _id: projectId, company_id: companyId });
+    if (project) {
+      const currentNext = (project as any).next_activities_id ?? 0;
+      if (currentNext < 11) {
+        (project as any).next_activities_id = 11; // Company Uploaded All Primary Data
+        await project.save();
+      }
+    }
+
     await this.companyActivityModel.create({
       company_id: companyId,
       project_id: projectId,
@@ -3022,6 +3415,15 @@ export class CompanyProjectsService {
       milestone_flow: 9,
       milestone_completed: true,
     });
+
+    this.notificationsService
+      .create(
+        'Primary Data Submitted',
+        'Your Primary Data form has been submitted successfully. GreenCo Team will review it.',
+        'C',
+        companyId,
+      )
+      .catch((e) => console.error('Primary data submission notification failed:', e));
 
     return { status: 'success', message: 'Success! Primary Data Submitted.' };
   }
@@ -3134,10 +3536,11 @@ export class CompanyProjectsService {
       { $set: { document_status: status, document_remarks: remark || null } },
     );
 
+    const company = await this.companyModel.findById(companyId).lean();
+    const cf = await this.companyFacilitatorModel.findOne({ company_id: companyId, project_id: projectId }).populate('facilitator_id').lean();
+
     // In-app + email when not accepted (status 2)
     if (status === PRIMARY_DATA_DOC_STATUS.NOT_ACCEPTED) {
-      const company = await this.companyModel.findById(companyId).lean();
-      const cf = await this.companyFacilitatorModel.findOne({ company_id: companyId, project_id: projectId }).populate('facilitator_id').lean();
       const detail = `Section: ${formType}. ${remark ? `Remarks: ${remark}` : ''}`;
       this.notificationsService.create('Primary data not accepted', detail, 'C', companyId).catch((e) => console.error('Primary not-accepted notification failed:', e));
       if (company?.email) {
@@ -3148,6 +3551,22 @@ export class CompanyProjectsService {
         this.notificationsService.create('Primary data not accepted', detail, 'F', fid).catch((e) => console.error('Primary not-accepted notification to F failed:', e));
         if ((cf as any).facilitator_id.email) {
           this.mailService.sendPrimaryDocNotAcceptedEmail((cf as any).facilitator_id.email, (cf as any).facilitator_id.name || 'Facilitator', detail).catch((e) => console.error('Primary not-accepted email failed:', e));
+        }
+      }
+    }
+
+    // In-app + email when accepted (status 1)
+    if (status === PRIMARY_DATA_DOC_STATUS.ACCEPTED) {
+      const detail = `Primary data section "${formType}" has been accepted by GreenCo Team.`;
+      this.notificationsService.create('Primary data accepted', detail, 'C', companyId).catch((e) => console.error('Primary accepted notification failed:', e));
+      if (company?.email) {
+        this.mailService.sendPrimaryDocAcceptedEmail(company.email, company.name || 'Company', formType).catch((e) => console.error('Primary accepted email failed:', e));
+      }
+      if (cf && (cf as any).facilitator_id) {
+        const fid = (cf as any).facilitator_id._id?.toString?.() || (cf as any).facilitator_id;
+        this.notificationsService.create('Primary data accepted', detail, 'F', fid).catch((e) => console.error('Primary accepted notification to F failed:', e));
+        if ((cf as any).facilitator_id.email) {
+          this.mailService.sendPrimaryDocAcceptedEmail((cf as any).facilitator_id.email, (cf as any).facilitator_id.name || 'Facilitator', formType).catch((e) => console.error('Primary accepted email failed:', e));
         }
       }
     }

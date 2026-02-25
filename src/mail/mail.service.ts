@@ -223,6 +223,29 @@ export class MailService {
     await this.transporter.sendMail(mailOptions);
   }
 
+  /** Company/Facilitator: primary data section accepted */
+  async sendPrimaryDocAcceptedEmail(
+    toEmail: string,
+    recipientName: string,
+    sectionLabel?: string,
+  ): Promise<void> {
+    const mailOptions = {
+      from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
+      to: toEmail,
+      subject: 'GreenCo - Primary Data Accepted',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Primary Data Accepted</h2>
+          <p>Dear ${recipientName},</p>
+          <p>A primary data section has been accepted by GreenCo Team.${sectionLabel ? ` Section: ${sectionLabel}` : ''}</p>
+          <p>Please log in to the portal to view your project status.</p>
+          <p>Best regards,<br>Green Co Team</p>
+        </div>
+      `,
+    };
+    await this.transporter.sendMail(mailOptions);
+  }
+
   /** Company/Facilitator: invoice (registration fee / proforma / tax) has been raised */
   async sendInvoiceRaisedEmail(
     toEmail: string,
@@ -375,6 +398,35 @@ export class MailService {
           <h2>Sustenance 2 Document Reminder</h2>
           <p>Dear ${recipientName},</p>
           <p>Please upload the second sustenance document for your project.</p>
+          <p>Best regards,<br>Green Co Team</p>
+        </div>
+      `,
+    };
+    await this.transporter.sendMail(mailOptions);
+  }
+
+  /**
+   * Help Desk: notify company when their ticket is resolved.
+   */
+  async sendHelpDeskTicketResolvedEmail(
+    companyEmail: string,
+    companyName: string,
+    ticketSubject: string,
+    remarks: string,
+  ): Promise<void> {
+    const mailOptions = {
+      from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
+      to: companyEmail,
+      subject: 'GreenCo Help Desk - Your query has been resolved',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Help Desk – Query Resolved</h2>
+          <p>Dear ${companyName},</p>
+          <p>Your help desk query has been resolved by GreenCo Admin.</p>
+          <p><strong>Subject:</strong> ${ticketSubject}</p>
+          <p><strong>Remarks / Resolution:</strong></p>
+          <p>${remarks || 'No additional remarks provided.'}</p>
+          <p>You can view all your tickets and status in the Help Desk section of the portal.</p>
           <p>Best regards,<br>Green Co Team</p>
         </div>
       `,

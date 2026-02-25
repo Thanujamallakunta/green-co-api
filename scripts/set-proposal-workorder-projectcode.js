@@ -8,17 +8,18 @@
  *
  * Usage:
  *   node scripts/set-proposal-workorder-projectcode.js <projectId> [options]
+ *   node scripts/set-proposal-workorder-projectcode.js --company <companyId> [options]
  *
- * Options (all optional; provide only what you want to set):
- *   --proposal <pathOrUrl>     e.g. uploads/company/6994af7e1c64cedc200bd8ca/proposal.pdf
- *   --workorder <pathOrUrl>    e.g. uploads/companyproject/6994af7e1c64cedc200bd8ca/workorder.pdf
+ * Options:
+ *   --company <companyId>      Find project by company_id and set proposal + work order to default paths
+ *   --proposal <pathOrUrl>     e.g. uploads/company/<projectId>/proposal.pdf
+ *   --workorder <pathOrUrl>    e.g. uploads/companyproject/<projectId>/workorder.pdf
  *   --projectcode <code>       e.g. PROJ-2024-001  (must be unique)
  *
  * Examples:
+ *   node scripts/set-proposal-workorder-projectcode.js --company 699dec95067fd70f4293d546
  *   node scripts/set-proposal-workorder-projectcode.js 6994af7e1c64cedc200bd8ca --proposal uploads/company/6994af7e1c64cedc200bd8ca/proposal.pdf
- *   node scripts/set-proposal-workorder-projectcode.js 6994af7e1c64cedc200bd8ca --workorder uploads/companyproject/6994af7e1c64cedc200bd8ca/workorder.pdf
- *   node scripts/set-proposal-workorder-projectcode.js 6994af7e1c64cedc200bd8ca --projectcode GC2024001
- *   node scripts/set-proposal-workorder-projectcode.js 6994af7e1c64cedc200bd8ca --proposal uploads/company/6994af7e1c64cedc200bd8ca/proposal.pdf --workorder uploads/companyproject/6994af7e1c64cedc200bd8ca/workorder.pdf --projectcode GC2024001
+ *   node scripts/set-proposal-workorder-projectcode.js --company 699dec95067fd70f4293d546 --projectcode GC2024001
  */
 
 require('dotenv').config();
@@ -38,10 +39,13 @@ function getDb(client) {
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const projectIdRaw = args[0];
-  const opts = { proposal: null, workorder: null, projectcode: null };
-  for (let i = 1; i < args.length; i++) {
-    if (args[i] === '--proposal' && args[i + 1]) {
+  let projectIdRaw = null;
+  const opts = { company: null, proposal: null, workorder: null, projectcode: null };
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--company' && args[i + 1]) {
+      opts.company = args[i + 1];
+      i++;
+    } else if (args[i] === '--proposal' && args[i + 1]) {
       opts.proposal = args[i + 1];
       i++;
     } else if (args[i] === '--workorder' && args[i + 1]) {
@@ -50,34 +54,19 @@ function parseArgs() {
     } else if (args[i] === '--projectcode' && args[i + 1]) {
       opts.projectcode = args[i + 1];
       i++;
+    } else if (!args[i].startsWith('--') && args[i].length === 24 && /^[a-f0-9]+$/i.test(args[i])) {
+      projectIdRaw = args[i];
     }
   }
   return { projectIdRaw, ...opts };
 }
 
 async function run() {
-  const { projectIdRaw, proposal, workorder, projectcode } = parseArgs();
+  const { projectIdRaw, company: companyIdRaw, proposal, workorder, projectcode } = parseArgs();
 
-  if (!projectIdRaw) {
-    console.error('Usage: node scripts/set-proposal-workorder-projectcode.js <projectId> [--proposal <path>] [--workorder <path>] [--projectcode <code>]');
-    process.exit(1);
-  }
-
-  if (!proposal && !workorder && !projectcode) {
-    console.error('Provide at least one of: --proposal <path> --workorder <path> --projectcode <code>');
-    process.exit(1);
-  }
-
-  let projectIdObj;
-  try {
-    projectIdObj = new ObjectId(projectIdRaw);
-  } catch (_) {
-    console.error('Invalid projectId (must be 24-char hex ObjectId):', projectIdRaw);
-    process.exit(1);
-  }
-
-  if (projectcode && !/^[A-Za-z0-9_-]{3,50}$/.test(projectcode)) {
-    console.error('Invalid project code (3–50 chars, letters, numbers, hyphen, underscore):', projectcode);
+  if (!projectIdRaw && !companyIdRaw) {
+    console.error('Usage: node scripts/set-proposal-workorder-projectcode.js <projectId> [options]');
+    console.error('   or: node scripts/set-proposal-workorder-projectcode.js --company <companyId> [options]');
     process.exit(1);
   }
 
@@ -87,10 +76,61 @@ async function run() {
   const projectsColl = db.collection('companyprojects');
   const workOrdersColl = db.collection('companyworkorders');
   const activitiesColl = db.collection('companyactivities');
+  const notificationsColl = db.collection('notifications');
 
-  const project = await projectsColl.findOne({ _id: projectIdObj });
-  if (!project) {
-    console.error('Project not found:', projectIdRaw);
+  let project;
+  let projectIdObj;
+
+  if (companyIdRaw) {
+    let companyIdObj = null;
+    try {
+      companyIdObj = new ObjectId(companyIdRaw);
+    } catch (_) {}
+    const byId = companyIdObj ? await projectsColl.findOne({ company_id: companyIdObj }) : null;
+    const byStr = await projectsColl.findOne({ company_id: companyIdRaw });
+    project = byId || byStr;
+    if (!project) {
+      console.error('No project found for company:', companyIdRaw);
+      await client.close();
+      process.exit(1);
+    }
+    projectIdObj = project._id;
+    console.log('Found project', projectIdObj.toString(), 'for company', companyIdRaw);
+  } else {
+    try {
+      projectIdObj = new ObjectId(projectIdRaw);
+    } catch (_) {
+      console.error('Invalid projectId (must be 24-char hex ObjectId):', projectIdRaw);
+      await client.close();
+      process.exit(1);
+    }
+    project = await projectsColl.findOne({ _id: projectIdObj });
+    if (!project) {
+      console.error('Project not found:', projectIdRaw);
+      await client.close();
+      process.exit(1);
+    }
+  }
+
+  let proposalPath = proposal;
+  let workorderPath = workorder;
+  if (companyIdRaw && !proposalPath) {
+    proposalPath = `uploads/company/${projectIdObj.toString()}/proposal.pdf`;
+    console.log('Default proposal path:', proposalPath);
+  }
+  if (companyIdRaw && !workorderPath) {
+    workorderPath = `uploads/companyproject/${projectIdObj.toString()}/workorder.pdf`;
+    console.log('Default work order path:', workorderPath);
+  }
+
+  if (!proposalPath && !workorderPath && !projectcode) {
+    console.error('Provide at least one of: --proposal <path> --workorder <path> --projectcode <code> (or use --company to use default paths)');
+    await client.close();
+    process.exit(1);
+  }
+
+  if (projectcode && !/^[A-Za-z0-9_-]{3,50}$/.test(projectcode)) {
+    console.error('Invalid project code (3–50 chars, letters, numbers, hyphen, underscore):', projectcode);
     await client.close();
     process.exit(1);
   }
@@ -99,8 +139,8 @@ async function run() {
   const updates = {};
   const now = new Date();
 
-  if (proposal) {
-    updates.proposal_document = proposal.startsWith('http') ? proposal : proposal.replace(/^\/+/, '');
+  if (proposalPath) {
+    updates.proposal_document = proposalPath.startsWith('http') ? proposalPath : proposalPath.replace(/^\/+/, '');
     console.log('Will set proposal_document:', updates.proposal_document);
   }
 
@@ -124,8 +164,8 @@ async function run() {
     console.log('Updated companyprojects:', Object.keys(updates).filter((k) => k !== 'updatedAt'));
   }
 
-  if (workorder) {
-    const woPath = workorder.startsWith('http') ? workorder : workorder.replace(/^\/+/, '');
+  if (workorderPath) {
+    const woPath = workorderPath.startsWith('http') ? workorderPath : workorderPath.replace(/^\/+/, '');
     const existingWo = await workOrdersColl.findOne({
       company_id: companyId,
       project_id: projectIdObj,
@@ -158,7 +198,7 @@ async function run() {
   }
 
   // Optional: ensure milestone 3 (proposal) and 4 (work order) activities exist if we set those docs
-  if (proposal) {
+  if (proposalPath) {
     const hasMilestone3 = await activitiesColl.findOne({
       company_id: companyId,
       project_id: projectIdObj,
@@ -177,9 +217,21 @@ async function run() {
       });
       console.log('Created activity: CII Uploaded Proposal Document (milestone 3)');
     }
+    // In-app notification so company sees "Proposal document uploaded" (same as API flow)
+    const projectCode = project.project_id || projectIdObj.toString();
+    await notificationsColl.insertOne({
+      title: 'Proposal document uploaded',
+      content: `Proposal document has been uploaded for your project ${projectCode}.`,
+      notify_type: 'C',
+      user_id: companyId,
+      seen: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+    console.log('Created notification for company: Proposal document uploaded');
   }
 
-  if (workorder) {
+  if (workorderPath) {
     const hasMilestone4 = await activitiesColl.findOne({
       company_id: companyId,
       project_id: projectIdObj,

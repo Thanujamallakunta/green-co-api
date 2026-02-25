@@ -89,6 +89,10 @@ export class CompanyProject {
   @Prop({ default: 0 })
   profile_update?: number; // 0 or 1 - indicates if registration form is submitted
 
+  /** Set when "All assessment submittals uploaded" notification has been sent (one per project) */
+  @Prop({ default: false })
+  assessment_submittals_complete_notified?: boolean;
+
   @Prop()
   project_id?: string; // Project code/identifier
 
@@ -96,6 +100,10 @@ export class CompanyProject {
   // (industry/entity/sector/state, addresses, SEZ, turnover, etc.)
   @Prop({ type: Object, default: {} })
   registration_info?: Record<string, any>;
+
+  /** When this project was used as source for recertification, the new project id (so quickview can show "open new project" instead of step 24). */
+  @Prop({ type: MongooseSchema.Types.ObjectId, required: false })
+  recertification_project_id?: MongooseSchema.Types.ObjectId;
 }
 
 export const CompanyProjectSchema = SchemaFactory.createForClass(CompanyProject);

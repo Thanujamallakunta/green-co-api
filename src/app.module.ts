@@ -7,6 +7,7 @@ import { NotificationsModule } from './company/notifications/notifications.modul
 import { FacilitatorsModule } from './company/facilitators/facilitators.module';
 import { RegistrationMastersModule } from './company/registration-masters/registration-masters.module';
 import { MailModule } from './mail/mail.module';
+import { HelpDeskModule } from './company/help-desk/help-desk.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
     FacilitatorsModule,
     RegistrationMastersModule,
     MailModule,
+    HelpDeskModule,
   ],
   controllers: [AppController],
 })
