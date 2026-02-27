@@ -18,6 +18,17 @@ export class MailService {
       greetingTimeout: 10000, // 10 seconds
       socketTimeout: 10000, // 10 seconds
     });
+
+    // Log basic transporter verification on startup so you can see immediately
+    // if SMTP credentials or host/port are wrong.
+    this.transporter
+      .verify()
+      .then(() => {
+        console.log('[MailService] SMTP connection verified successfully.');
+      })
+      .catch((err) => {
+        console.error('[MailService] SMTP connection verification failed:', err);
+      });
   }
 
   async sendCompanyRegistrationEmail(
@@ -25,26 +36,103 @@ export class MailService {
     companyName: string,
     password: string,
   ): Promise<void> {
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login`;
     const mailOptions = {
       from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
       to: email,
       subject: 'Welcome to Green Co - Registration Successful',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to Green Co!</h2>
-          <p>Dear ${companyName},</p>
-          <p>Your company has been successfully registered with Green Co.</p>
-          <p><strong>Your login credentials:</strong></p>
-          <p>Email: ${email}</p>
-          <p>Password: ${password}</p>
-          <p>Please keep these credentials secure and change your password after first login.</p>
-          <p>You can login at: <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login">Login Page</a></p>
-          <p>Best regards,<br>Green Co Team</p>
-        </div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to Green Co</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6;">
+      <tr>
+        <td align="center" style="padding:32px 12px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#ffffff;border-radius:16px;box-shadow:0 6px 30px rgba(15,23,42,0.12);overflow:hidden;">
+            <!-- Top bar -->
+            <tr>
+              <td style="padding:20px 28px;background-color:#0f172a;border-bottom:1px solid rgba(148,163,184,0.35);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:linear-gradient(120deg,#22c55e,#16a34a);color:#ecfdf5;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Green Co</div>
+                      <p style="margin:10px 0 0 0;color:#e5e7eb;font-size:18px;font-weight:600;">Registration successful</p>
+                      <p style="margin:4px 0 0 0;color:#9ca3af;font-size:13px;">Your company account has been created.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 28px 10px 28px;">
+                <p style="margin:0 0 12px 0;color:#111827;font-size:16px;">Hi <strong>${companyName}</strong>,</p>
+                <p style="margin:0 0 20px 0;color:#4b5563;font-size:14px;line-height:1.6;">Thank you for registering with <strong>Green Co</strong>. Your company profile has been created and you can now sign in to your portal using the credentials below.</p>
+                <!-- Credentials card -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:12px;background-color:#f9fafb;border:1px solid #e5e7eb;margin:0 0 20px 0;">
+                  <tr>
+                    <td style="padding:18px 20px 16px 20px;">
+                      <p style="margin:0 0 10px 0;color:#6b7280;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Your login credentials</p>
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td style="padding:0 0 10px 0;">
+                            <p style="margin:0;color:#6b7280;font-size:12px;">Email</p>
+                            <p style="margin:2px 0 0 0;color:#111827;font-size:14px;font-weight:500;">${email}</p>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <p style="margin:0;color:#6b7280;font-size:12px;">Temporary password</p>
+                            <p style="margin:2px 0 0 0;color:#111827;font-size:14px;font-weight:600;font-family:'SF Mono',ui-monospace,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;">${password}</p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 20px 0;color:#9ca3af;font-size:12px;line-height:1.5;">For security, this password is valid until you log in and change it. Do not share it with anyone.</p>
+                <!-- Button -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin-bottom:8px;">
+                  <tr>
+                    <td align="center" bgcolor="#16a34a" style="border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);">
+                      <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;white-space:nowrap;">Open company portal</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:4px 0 0 0;text-align:center;color:#6b7280;font-size:11px;">or copy &amp; paste this link into your browser:</p>
+                <p style="margin:6px 0 0 0;text-align:center;color:#16a34a;font-size:12px;word-break:break-all;"><a href="${loginUrl}" style="color:#16a34a;text-decoration:none;">${loginUrl}</a></p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:16px 28px 22px 28px;border-top:1px solid #e5e7eb;background-color:#f9fafb;">
+                <p style="margin:0 0 4px 0;color:#6b7280;font-size:12px;">Best regards,</p>
+                <p style="margin:0;color:#111827;font-size:13px;font-weight:600;">Green Co Team</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
       `,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    // Basic logging so you can see in the Nest console whether the mail was attempted / failed
+    try {
+      console.log('[MailService] Sending registration email to:', email);
+      await this.transporter.sendMail(mailOptions);
+      console.log('[MailService] Registration email sent successfully to:', email);
+    } catch (err) {
+      console.error('[MailService] Failed to send registration email to:', email, 'Error:', err);
+      throw err;
+    }
   }
 
   async sendForgotPasswordEmail(email: string, password: string): Promise<void> {

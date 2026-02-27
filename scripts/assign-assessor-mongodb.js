@@ -17,15 +17,16 @@
 require('dotenv').config();
 const { MongoClient, ObjectId } = require('mongodb');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/greenco_db';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/greenco';
 
 function getDb(client) {
   try {
-    const pathname = new URL(MONGODB_URI).pathname;
-    const dbName = (pathname && pathname.length > 1 ? pathname.replace(/^\//, '') : null) || 'greenco_db';
+    const url = new URL(MONGODB_URI);
+    const pathname = url.pathname || '/';
+    const dbName = pathname && pathname !== '/' ? pathname.slice(1) : 'greenco';
     return client.db(dbName);
   } catch (_) {
-    return client.db('greenco_db');
+    return client.db('greenco');
   }
 }
 
@@ -54,6 +55,8 @@ async function run() {
   const projectsColl = db.collection('companyprojects');
   const assessorsColl = db.collection('assessors');
   const companyAssessorsColl = db.collection('companyassessors');
+  const activitiesColl = db.collection('companyactivities');
+  const notificationsColl = db.collection('notifications');
 
   const project = await projectsColl.findOne({ _id: new ObjectId(projectId) });
   if (!project) {
@@ -111,6 +114,51 @@ async function run() {
     });
     console.log('Assessor assigned successfully.');
   }
+
+  const now = new Date();
+  const pId = new ObjectId(projectId);
+
+  // Log milestone 15: CII Assigned an Assessor (so "Next Step" moves to 16)
+  await activitiesColl.insertOne({
+    company_id: companyId,
+    project_id: pId,
+    description: 'CII Assigned an Assessor',
+    activity_type: 'cii',
+    milestone_flow: 15,
+    milestone_completed: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+  console.log('Activity logged: CII Assigned an Assessor (milestone 15).');
+
+  const currentNext = typeof project.next_activities_id === 'number' ? project.next_activities_id : 0;
+  if (currentNext < 16) {
+    await projectsColl.updateOne(
+      { _id: pId },
+      { $set: { next_activities_id: 16, updatedAt: now } },
+    );
+    console.log('next_activities_id advanced to 16 (Preliminary Scoring submitted by CII).');
+  }
+
+  await notificationsColl.insertOne({
+    title: 'GreenCo Team has assigned an Assessor for your project',
+    content: `Assessor ${assessor.name} has been assigned for your project by GreenCo Team. Check site visit details.`,
+    notify_type: 'C',
+    user_id: companyId,
+    seen: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await notificationsColl.insertOne({
+    title: 'Greenco Team has assigned an Assessor for your company',
+    content: `Assessor ${assessor.name} has been assigned to this company by Admin`,
+    notify_type: 'AS',
+    user_id: assessor._id,
+    seen: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+  console.log('Notifications created for company (C) and assessor (AS).');
 
   console.log('  Project ID:', projectId);
   console.log('  Company ID:', companyId.toString());

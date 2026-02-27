@@ -189,9 +189,10 @@ export class CompanyAuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const company = await this.companyModel
-      .findOne({ email: loginDto.email.toLowerCase() })
-      .select('+password');
+    const email = loginDto.email.trim().toLowerCase();
+    const password = loginDto.password.trim();
+
+    const company = await this.companyModel.findOne({ email }).select('+password');
 
     if (!company) {
       throw new UnauthorizedException({
@@ -201,10 +202,7 @@ export class CompanyAuthService {
     }
 
     // Check password
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      company.password,
-    );
+    const isPasswordValid = await bcrypt.compare(password, company.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException({

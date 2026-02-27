@@ -1810,7 +1810,6 @@ export class CompanyProjectsService {
     };
 
     const projectAny = project as any;
-    const statusLabels = this.getAssessmentSubmittalStatusLabels();
 
     const documents: {
       proposal_document: string | null;
@@ -1820,11 +1819,13 @@ export class CompanyProjectsService {
       hand_holding_document: string | null;
       hand_holding_document2: string | null;
       hand_holding_document3: string | null;
-      assessment_submittals: Array<{
+        assessment_submittals: Array<{
         id: string;
         document: string;
         document_title?: string;
+        // document_status kept for backend use, but frontend should ignore it
         document_status: number;
+        // approval_status no longer used (always empty string so UI does not show Pending/Accepted/etc.)
         approval_status: string;
         remarks: string | null;
         criterion_sc: string;
@@ -1864,13 +1865,13 @@ export class CompanyProjectsService {
         documents.hand_holding_document3 = docUrl;
       } else if (docType === 'assessment_submittal') {
         const docAny = doc as any;
-        const status = doc.document_status ?? 0;
         documents.assessment_submittals.push({
           id: doc._id.toString(),
           document: docUrl,
           document_title: doc.document_title || doc.document_filename,
-          document_status: status,
-          approval_status: statusLabels[status] ?? 'Pending',
+          // Do not surface status – frontend should not show Pending/Accepted/Not Accepted
+          document_status: 0,
+          approval_status: '',
           remarks: doc.document_remarks ?? null,
           criterion_sc: doc.description || '',
           criterion_name: doc.description || '',
@@ -1880,20 +1881,13 @@ export class CompanyProjectsService {
       }
     }
 
-    const approval_status_options = [
-      { value: 0, label: 'Pending' },
-      { value: 1, label: 'Accepted' },
-      { value: 2, label: 'Not Accepted' },
-      { value: 3, label: 'Under Review' },
-    ];
-
     return {
       status: 'success',
       message: 'Resources center documents retrieved successfully',
       data: {
         group,
         sector: sectorName,
-        approval_status_options,
+        // approval_status_options removed so frontend does not render status dropdown
         documents,
         process_type: projectAny.process_type || 'c',
       },
