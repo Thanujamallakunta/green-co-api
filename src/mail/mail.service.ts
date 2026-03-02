@@ -37,6 +37,7 @@ export class MailService {
     password: string,
   ): Promise<void> {
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login`;
+    const brandName = 'Green Co';
     const mailOptions = {
       from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
       to: email,
@@ -49,70 +50,58 @@ export class MailService {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Welcome to Green Co</title>
   </head>
-  <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6;">
+  <body style="margin:0;padding:0;background-color:#f0f9eb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f0f9eb;">
       <tr>
         <td align="center" style="padding:32px 12px;">
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#ffffff;border-radius:16px;box-shadow:0 6px 30px rgba(15,23,42,0.12);overflow:hidden;">
-            <!-- Top bar -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(58,151,61,0.15);overflow:hidden;border:1px solid #A8D94E;">
+            <!-- Logo -->
             <tr>
-              <td style="padding:20px 28px;background-color:#0f172a;border-bottom:1px solid rgba(148,163,184,0.35);">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  <tr>
-                    <td align="left">
-                      <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:linear-gradient(120deg,#22c55e,#16a34a);color:#ecfdf5;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">Green Co</div>
-                      <p style="margin:10px 0 0 0;color:#e5e7eb;font-size:18px;font-weight:600;">Registration successful</p>
-                      <p style="margin:4px 0 0 0;color:#9ca3af;font-size:13px;">Your company account has been created.</p>
-                    </td>
-                  </tr>
-                </table>
+              <td align="center" style="padding:28px 28px 16px 28px;">
+                <div style="display:inline-block;padding:8px 16px;border-radius:999px;background:#6DC041;color:#FFFFFF;font-size:14px;font-weight:700;letter-spacing:0.02em;">${brandName}</div>
+              </td>
+            </tr>
+            <!-- Welcome banner -->
+            <tr>
+              <td style="padding:12px 28px 24px 28px;background:linear-gradient(135deg,#e8f5e0 0%,#f0f9eb 100%);border-radius:0 0 24px 24px;">
+                <p style="margin:0;color:#3A973D;font-size:28px;font-weight:700;letter-spacing:-0.02em;">Welcome</p>
+                <p style="margin:6px 0 0 0;color:#3A973D;font-size:14px;opacity:0.9;">Your company account has been created.</p>
               </td>
             </tr>
             <!-- Content -->
             <tr>
-              <td style="padding:28px 28px 10px 28px;">
-                <p style="margin:0 0 12px 0;color:#111827;font-size:16px;">Hi <strong>${companyName}</strong>,</p>
-                <p style="margin:0 0 20px 0;color:#4b5563;font-size:14px;line-height:1.6;">Thank you for registering with <strong>Green Co</strong>. Your company profile has been created and you can now sign in to your portal using the credentials below.</p>
-                <!-- Credentials card -->
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:12px;background-color:#f9fafb;border:1px solid #e5e7eb;margin:0 0 20px 0;">
+              <td style="padding:24px 28px 10px 28px;">
+                <p style="margin:0 0 8px 0;color:#3A973D;font-size:18px;font-weight:700;">Welcome to ${brandName}!</p>
+                <p style="margin:0 0 20px 0;color:#3A973D;font-size:15px;">Hello, <strong>${companyName}</strong>,</p>
+                <p style="margin:0 0 16px 0;color:#3A973D;font-size:14px;line-height:1.6;opacity:0.9;">Thank you for registering with <strong>${brandName}</strong>. Your company profile has been created and you can now sign in using the credentials below.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:12px;background:#f0f9eb;border:1px solid #A8D94E;margin:0 0 20px 0;">
                   <tr>
-                    <td style="padding:18px 20px 16px 20px;">
-                      <p style="margin:0 0 10px 0;color:#6b7280;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Your login credentials</p>
-                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                        <tr>
-                          <td style="padding:0 0 10px 0;">
-                            <p style="margin:0;color:#6b7280;font-size:12px;">Email</p>
-                            <p style="margin:2px 0 0 0;color:#111827;font-size:14px;font-weight:500;">${email}</p>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <p style="margin:0;color:#6b7280;font-size:12px;">Temporary password</p>
-                            <p style="margin:2px 0 0 0;color:#111827;font-size:14px;font-weight:600;font-family:'SF Mono',ui-monospace,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;">${password}</p>
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding:18px 20px;">
+                      <p style="margin:0 0 10px 0;color:#3A973D;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Your login credentials</p>
+                      <p style="margin:0 0 8px 0;color:#3A973D;font-size:12px;opacity:0.85;">Email</p>
+                      <p style="margin:0 0 14px 0;color:#3A973D;font-size:14px;font-weight:500;">${email}</p>
+                      <p style="margin:0;color:#3A973D;font-size:12px;opacity:0.85;">Temporary password</p>
+                      <p style="margin:2px 0 0 0;color:#3A973D;font-size:14px;font-weight:600;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;">${password}</p>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:0 0 20px 0;color:#9ca3af;font-size:12px;line-height:1.5;">For security, this password is valid until you log in and change it. Do not share it with anyone.</p>
-                <!-- Button -->
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin-bottom:8px;">
+                <p style="margin:0 0 24px 0;color:#3A973D;font-size:12px;line-height:1.5;opacity:0.8;">For security, please change this password after your first login. Do not share it with anyone.</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin-bottom:12px;">
                   <tr>
-                    <td align="center" bgcolor="#16a34a" style="border-radius:999px;background:linear-gradient(135deg,#22c55e,#16a34a);">
-                      <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;white-space:nowrap;">Open company portal</a>
+                    <td align="center" style="border-radius:12px;background:#6DC041;">
+                      <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Get started</a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:4px 0 0 0;text-align:center;color:#6b7280;font-size:11px;">or copy &amp; paste this link into your browser:</p>
-                <p style="margin:6px 0 0 0;text-align:center;color:#16a34a;font-size:12px;word-break:break-all;"><a href="${loginUrl}" style="color:#16a34a;text-decoration:none;">${loginUrl}</a></p>
+                <p style="margin:0;text-align:center;color:#3A973D;font-size:11px;opacity:0.8;">Or copy this link: <a href="${loginUrl}" style="color:#6DC041;text-decoration:none;word-break:break-all;">${loginUrl}</a></p>
               </td>
             </tr>
             <!-- Footer -->
             <tr>
-              <td style="padding:16px 28px 22px 28px;border-top:1px solid #e5e7eb;background-color:#f9fafb;">
-                <p style="margin:0 0 4px 0;color:#6b7280;font-size:12px;">Best regards,</p>
-                <p style="margin:0;color:#111827;font-size:13px;font-weight:600;">Green Co Team</p>
+              <td style="padding:20px 28px 24px 28px;border-top:1px solid #A8D94E;background:#f0f9eb;">
+                <p style="margin:0 0 4px 0;color:#3A973D;font-size:12px;font-weight:600;">Thanks, ${brandName}</p>
+                <p style="margin:0 0 8px 0;color:#3A973D;font-size:11px;opacity:0.85;">Sent by ${brandName}. Check our portal for updates.</p>
+                <p style="margin:0;color:#3A973D;font-size:11px;opacity:0.8;">© ${new Date().getFullYear()} ${brandName}</p>
               </td>
             </tr>
           </table>
@@ -136,20 +125,88 @@ export class MailService {
   }
 
   async sendForgotPasswordEmail(email: string, password: string): Promise<void> {
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login`;
+    const brandName = 'Green Co';
+    const supportEmail = process.env.MAIL_FROM_ADDRESS || 'support@greenco.com';
     const mailOptions = {
       from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
       to: email,
       subject: 'Green Co - Password Reset',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Password Reset Request</h2>
-          <p>Your password has been reset. Here is your new password:</p>
-          <p><strong>New Password: ${password}</strong></p>
-          <p>Please login and change your password after first login for security.</p>
-          <p>You can login at: <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login">Login Page</a></p>
-          <p>If you did not request this password reset, please contact support immediately.</p>
-          <p>Best regards,<br>Green Co Team</p>
-        </div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Reset - Green Co</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#0d2e0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0d2e0f;">
+      <tr>
+        <td align="center" style="padding:32px 12px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#1a3d1c;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #3A973D;">
+            <!-- Header: logo -->
+            <tr>
+              <td style="padding:24px 28px;border-bottom:1px solid rgba(168,217,78,0.25);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <div style="display:inline-block;padding:6px 14px;border-radius:8px;background:#6DC041;color:#FFFFFF;font-size:14px;font-weight:700;">${brandName}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Hero strip -->
+            <tr>
+              <td style="padding:24px 28px;background:linear-gradient(135deg,#3A973D 0%,#6DC041 50%,#A8D94E 100%);">
+                <p style="margin:0;color:#FFFFFF;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;opacity:0.95;">Password reset</p>
+                <p style="margin:8px 0 0 0;color:#FFFFFF;font-size:24px;font-weight:700;">Reset your password</p>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 28px 20px 28px;">
+                <p style="margin:0 0 12px 0;color:#FFFFFF;font-size:16px;font-weight:600;">Hello,</p>
+                <p style="margin:0 0 20px 0;color:#A8D94E;font-size:14px;line-height:1.6;">Your password has been reset. Use the temporary password below to sign in to ${brandName}, then change it for security.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-radius:12px;background:rgba(109,192,65,0.2);border:1px solid #A8D94E;margin:0 0 24px 0;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <p style="margin:0 0 6px 0;color:#A8D94E;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Temporary password</p>
+                      <p style="margin:0;color:#FFFFFF;font-size:15px;font-weight:600;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;">${password}</p>
+                    </td>
+                  </tr>
+                </table>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin-bottom:16px;">
+                  <tr>
+                    <td align="center" style="border-radius:12px;background:#6DC041;">
+                      <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Sign in to portal</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0;text-align:center;color:#A8D94E;font-size:12px;">Or use this link: <a href="${loginUrl}" style="color:#A8D94E;text-decoration:none;word-break:break-all;">${loginUrl}</a></p>
+              </td>
+            </tr>
+            <!-- Help -->
+            <tr>
+              <td style="padding:0 28px 24px 28px;">
+                <p style="margin:0 0 6px 0;color:#A8D94E;font-size:13px;font-weight:600;">Need help?</p>
+                <p style="margin:0;color:#A8D94E;font-size:12px;opacity:0.9;">If you did not request this reset, contact us at <a href="mailto:${supportEmail}" style="color:#A8D94E;text-decoration:none;">${supportEmail}</a></p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 28px 24px 28px;border-top:1px solid rgba(168,217,78,0.25);background:#0d2e0f;">
+                <p style="margin:0 0 8px 0;color:#A8D94E;font-size:11px;line-height:1.5;opacity:0.9;">This email was sent to ${email}. If you prefer not to receive these emails, please contact support.</p>
+                <p style="margin:0;color:#A8D94E;font-size:11px;opacity:0.8;">© ${new Date().getFullYear()} ${brandName}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
       `,
     };
 
@@ -157,18 +214,79 @@ export class MailService {
   }
 
   async sendPasswordUpdateEmail(email: string, companyName: string): Promise<void> {
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/company/login`;
+    const brandName = 'Green Co';
+    const supportEmail = process.env.MAIL_FROM_ADDRESS || 'support@greenco.com';
     const mailOptions = {
       from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
       to: email,
       subject: 'Green Co - Password Updated',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Password Updated Successfully</h2>
-          <p>Dear ${companyName},</p>
-          <p>Your password has been successfully updated.</p>
-          <p>If you did not make this change, please contact support immediately.</p>
-          <p>Best regards,<br>Green Co Team</p>
-        </div>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Updated - Green Co</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#0d2e0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0d2e0f;">
+      <tr>
+        <td align="center" style="padding:32px 12px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background-color:#1a3d1c;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #3A973D;">
+            <!-- Header: logo -->
+            <tr>
+              <td style="padding:24px 28px;border-bottom:1px solid rgba(168,217,78,0.25);">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td align="left">
+                      <div style="display:inline-block;padding:6px 14px;border-radius:8px;background:#6DC041;color:#FFFFFF;font-size:14px;font-weight:700;">${brandName}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Hero strip -->
+            <tr>
+              <td style="padding:24px 28px;background:linear-gradient(135deg,#3A973D 0%,#6DC041 50%,#A8D94E 100%);">
+                <p style="margin:0;color:#FFFFFF;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;opacity:0.95;">Confirmation</p>
+                <p style="margin:8px 0 0 0;color:#FFFFFF;font-size:24px;font-weight:700;">Password updated</p>
+              </td>
+            </tr>
+            <!-- Content -->
+            <tr>
+              <td style="padding:28px 28px 20px 28px;">
+                <p style="margin:0 0 12px 0;color:#FFFFFF;font-size:16px;">Hello, <strong>${companyName}</strong>,</p>
+                <p style="margin:0 0 24px 0;color:#A8D94E;font-size:14px;line-height:1.6;">Your password has been successfully updated. You can sign in with your new password at any time.</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin-bottom:16px;">
+                  <tr>
+                    <td align="center" style="border-radius:12px;background:#6DC041;">
+                      <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:14px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;">Sign in</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Help -->
+            <tr>
+              <td style="padding:0 28px 24px 28px;">
+                <p style="margin:0 0 6px 0;color:#A8D94E;font-size:13px;font-weight:600;">Need help?</p>
+                <p style="margin:0;color:#A8D94E;font-size:12px;opacity:0.9;">If you did not make this change, contact us at <a href="mailto:${supportEmail}" style="color:#A8D94E;text-decoration:none;">${supportEmail}</a></p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:20px 28px 24px 28px;border-top:1px solid rgba(168,217,78,0.25);background:#0d2e0f;">
+                <p style="margin:0 0 8px 0;color:#A8D94E;font-size:11px;line-height:1.5;opacity:0.9;">This email was sent to ${email}.</p>
+                <p style="margin:0;color:#A8D94E;font-size:11px;opacity:0.8;">© ${new Date().getFullYear()} ${brandName}</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
       `,
     };
 

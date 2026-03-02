@@ -4,6 +4,9 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 /** Module codes: A = Admin, C = Company, F = Facilitator, CO = Coordinator, AS = Assessor */
 export type NotifyType = 'A' | 'C' | 'F' | 'CO' | 'AS';
 
+/** Display category for frontend Type column / icon: ticket, message, team, update, etc. */
+export type NotificationCategory = 'ticket' | 'message' | 'team' | 'update' | string;
+
 export type NotificationLogDocument = NotificationLog & Document;
 
 @Schema({ timestamps: true, collection: 'notifications' })
@@ -11,11 +14,15 @@ export class NotificationLog {
   @Prop({ required: true })
   title: string;
 
-  @Prop({ required: true })
-  content: string;
+  @Prop({ required: false })
+  content?: string;
 
   @Prop({ required: true })
   notify_type: NotifyType;
+
+  /** Optional display category for frontend (e.g. ticket, message, team, update). Returned as notify_type in API. */
+  @Prop({ required: false })
+  category?: NotificationCategory;
 
   /** Optional for Admin (A) when broadcast; otherwise user_id of Company/Facilitator/Coordinator/Assessor */
   @Prop({ type: MongooseSchema.Types.ObjectId, required: false })

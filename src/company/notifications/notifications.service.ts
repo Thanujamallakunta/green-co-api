@@ -16,19 +16,22 @@ export class NotificationsService {
 
   /**
    * Create an in-app notification (matches Laravel __notification_log).
+   * @param category Optional display type for frontend (ticket, message, team, update). Returned as notify_type in list API.
    */
   async create(
     title: string,
     content: string,
     notifyType: NotifyType,
     userId?: string | Types.ObjectId | null,
+    category?: string,
   ): Promise<NotificationLogDocument> {
     const doc = await this.notificationModel.create({
       title,
-      content,
+      content: content ?? '',
       notify_type: notifyType,
       user_id: userId == null ? undefined : (typeof userId === 'string' ? new Types.ObjectId(userId) : userId),
       seen: false,
+      ...(category != null && { category }),
     });
     return doc;
   }
@@ -65,10 +68,15 @@ export class NotificationsService {
       notifications: notifications.map((n: any) => ({
         id: n._id.toString(),
         title: n.title,
-        content: n.content,
-        notify_type: n.notify_type,
-        seen: n.seen,
-        created_at: n.createdAt,
+        ...(n.content != null && n.content !== '' && { content: n.content }),
+        ...(n.category != null && { notify_type: n.category }),
+        seen: !!n.seen,
+        created_at:
+          n.createdAt instanceof Date
+            ? n.createdAt.toISOString()
+            : typeof n.createdAt === 'string'
+              ? n.createdAt
+              : n.createdAt,
       })),
       notificationsCount: unreadCount,
     };

@@ -8,24 +8,21 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   /**
-   * GET /api/company/notifications
-   * List in-app notifications for the logged-in company (module C).
+   * GET /api/company/notifications?skip=0&limit=50
+   * List in-app notifications for the logged-in company.
+   * Response: data.notifications[], data.notificationsCount (unread).
    */
   @Get()
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
   async list(
     @Request() req,
-    @Query('limit') limit?: string,
     @Query('skip') skip?: string,
+    @Query('limit') limit?: string,
   ) {
-    const result = await this.notificationsService.getForUser(
-      'C',
-      req.user.userId,
-      {
-        limit: limit ? parseInt(limit, 10) : undefined,
-        skip: skip ? parseInt(skip, 10) : undefined,
-      },
-    );
+    const result = await this.notificationsService.getForUser('C', req.user.userId, {
+      skip: skip != null ? parseInt(skip, 10) : 0,
+      limit: limit != null ? parseInt(limit, 10) : 50,
+    });
     return {
       status: 'success',
       message: 'Notifications loaded',
@@ -41,11 +38,11 @@ export class NotificationsController {
     return { status: 'success', message: 'All notifications marked as seen' };
   }
 
-  /** PATCH /api/company/notifications/:id/seen – mark one as seen */
-  @Patch(':id/seen')
+  /** PATCH /api/company/notifications/:notificationId/seen – mark one as seen */
+  @Patch(':notificationId/seen')
   @UseGuards(JwtAuthGuard, AccountStatusGuard)
-  async markOneSeen(@Request() req, @Param('id') id: string) {
-    await this.notificationsService.markSeen('C', req.user.userId, id);
+  async markOneSeen(@Request() req, @Param('notificationId') notificationId: string) {
+    await this.notificationsService.markSeen('C', req.user.userId, notificationId);
     return { status: 'success', message: 'Notification marked as seen' };
   }
 }
