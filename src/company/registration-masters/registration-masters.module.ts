@@ -7,6 +7,8 @@ import { Entity, EntitySchema } from '../schemas/entity.schema';
 import { Sector, SectorSchema } from '../schemas/sector.schema';
 import { State, StateSchema } from '../schemas/state.schema';
 import { Facilitator, FacilitatorSchema } from '../schemas/facilitator.schema';
+import { Assessor, AssessorSchema } from '../schemas/assessor.schema';
+import { AssessorGrade, AssessorGradeSchema } from '../schemas/assessor-grade.schema';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Facilitator, FacilitatorSchema } from '../schemas/facilitator.schema';
       { name: Sector.name, schema: SectorSchema },
       { name: State.name, schema: StateSchema },
       { name: Facilitator.name, schema: FacilitatorSchema },
+      { name: Assessor.name, schema: AssessorSchema },
+      { name: AssessorGrade.name, schema: AssessorGradeSchema },
     ]),
   ],
   controllers: [RegistrationMastersController],

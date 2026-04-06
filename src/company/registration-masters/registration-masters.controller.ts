@@ -33,6 +33,15 @@ export class RegistrationMastersController {
   }
 
   /**
+   * GET /api/company/categories
+   * Returns industry categories for dropdowns.
+   */
+  @Get('categories')
+  async getAllCategories() {
+    return this.registrationMastersService.getAllCategories();
+  }
+
+  /**
    * GET /api/company/groups-sectors
    * Returns distinct groups and all sectors (with group_name) for GROUP / SECTOR UI (e.g. Primary Data checklist page).
    */
@@ -48,6 +57,15 @@ export class RegistrationMastersController {
   @Get('assessment-categories')
   async getAssessmentCategories() {
     return this.registrationMastersService.getAssessmentCategories();
+  }
+
+  /**
+   * GET /api/company/assessor-grades
+   * Returns assessor grades for dropdown (DB-backed).
+   */
+  @Get('assessor-grades')
+  async getAssessorGrades() {
+    return this.registrationMastersService.getAssessorGrades();
   }
 }
 

@@ -132,6 +132,7 @@ export class MailService {
       from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
       to: email,
       subject: 'Green Co - Password Reset',
+      text: `Green Co Password Reset\n\nEmail: ${email}\nTemporary Password: ${password}\nLogin: ${loginUrl}\n\nIf you did not request this reset, contact support.`,
       html: `
 <!DOCTYPE html>
 <html>
@@ -210,7 +211,106 @@ export class MailService {
       `,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    const info = await this.transporter.sendMail(mailOptions);
+    console.log('[MailService] Forgot password mail response:', {
+      to: email,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      messageId: info.messageId,
+      response: info.response,
+    });
+    if (
+      Array.isArray(info.rejected) &&
+      info.rejected.map(String).includes(email)
+    ) {
+      throw new Error(`SMTP rejected recipient: ${email}`);
+    }
+  }
+
+  async sendAdminForgotPasswordEmail(
+    email: string,
+    password: string,
+  ): Promise<void> {
+    const loginUrl = `${
+      process.env.ADMIN_FRONTEND_URL || process.env.FRONTEND_URL || 'http://localhost:3002'
+    }/admin/login`;
+    const backupEmail = (process.env.ADMIN_FORGOT_PASSWORD_BACKUP_TO || '')
+      .trim()
+      .toLowerCase();
+
+    const mailOptions = {
+      from: process.env.MAIL_FROM_ADDRESS || 'noreply@greenco.com',
+      to: email,
+      ...(backupEmail && backupEmail !== email ? { cc: backupEmail } : {}),
+      subject: 'GreenCo Admin - Password Reset',
+      text: `GreenCo Admin Password Reset\n\nEmail: ${email}\nTemporary Password: ${password}\nLogin: ${loginUrl}\n\nIf you did not request this reset, contact support immediately.`,
+      html: `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GreenCo Admin Password Reset</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+            <tr>
+              <td style="padding:20px 24px;background:#0f7b2f;color:#ffffff;">
+                <h2 style="margin:0;font-size:20px;">GreenCo Admin Password Reset</h2>
+                <p style="margin:8px 0 0 0;font-size:13px;opacity:0.95;">Your new temporary password is ready.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px;">
+                <p style="margin:0 0 10px 0;font-size:14px;color:#111827;">Hello Admin,</p>
+                <p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#374151;">
+                  Use the temporary password below to sign in. For security, change it immediately after login.
+                </p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;">
+                  <tr>
+                    <td style="padding:16px;">
+                      <p style="margin:0 0 6px 0;font-size:12px;color:#6b7280;">Email</p>
+                      <p style="margin:0 0 10px 0;font-size:14px;font-weight:600;color:#111827;">${email}</p>
+                      <p style="margin:0 0 6px 0;font-size:12px;color:#6b7280;">Temporary password</p>
+                      <p style="margin:0;font-size:16px;font-weight:700;font-family:Consolas,Monaco,monospace;color:#111827;">${password}</p>
+                    </td>
+                  </tr>
+                </table>
+                <div style="text-align:center;margin:20px 0 10px 0;">
+                  <a href="${loginUrl}" target="_blank" style="display:inline-block;padding:12px 22px;background:#0f7b2f;color:#ffffff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Go to Admin Login</a>
+                </div>
+                <p style="margin:0;text-align:center;font-size:12px;color:#6b7280;">
+                  If button does not work: <a href="${loginUrl}" style="color:#0f7b2f;text-decoration:none;">${loginUrl}</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+      `,
+    };
+
+    const info = await this.transporter.sendMail(mailOptions);
+    console.log('[MailService] Admin forgot password mail response:', {
+      to: email,
+      cc: backupEmail && backupEmail !== email ? backupEmail : null,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      messageId: info.messageId,
+      response: info.response,
+    });
+    if (
+      Array.isArray(info.rejected) &&
+      info.rejected.map(String).includes(email)
+    ) {
+      throw new Error(`SMTP rejected recipient: ${email}`);
+    }
   }
 
   async sendPasswordUpdateEmail(email: string, companyName: string): Promise<void> {
